@@ -1,0 +1,18 @@
+{
+  "name": "Parsify",
+  "version": "0.0.0",
+  "description": "recursive descent parser for custom recursive descent parsers.",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "fedeaar",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^17.0.15",
+    "typescript": "^4.5.5"
+  },
+  "dependencies": {
+    "fs": "^0.0.1-security"
+  }
+}
