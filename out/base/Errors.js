@@ -1,10 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SemanticsError = exports.SyntaxError = exports.IllegalCharError = exports.slError = exports.ErrorCode = void 0;
+exports.SemanticsError = exports.SyntaxError = exports.TokenError = exports.IllegalCharError = exports.slError = exports.ErrorCode = void 0;
 var ErrorCode;
 (function (ErrorCode) {
     ErrorCode["ILLEGAL_CHAR"] = "invalid character";
     ErrorCode["UNEXPECTED_TOKEN"] = "unexpected token";
+    ErrorCode["TOKEN_ERROR"] = "unknown or illegal token";
     ErrorCode["ID_NOT_FOUND"] = "identifier not found";
     ErrorCode["DUPLICATE_ID"] = "duplicate identifier declaration";
 })(ErrorCode = exports.ErrorCode || (exports.ErrorCode = {}));
@@ -16,11 +17,19 @@ class slError {
     }
     get msg() {
         var _a, _b;
-        const token_info = this.token ? `\n\ttoken type = ${this.token.type}` : '';
-        const token_value = ((_a = this.token) === null || _a === void 0 ? void 0 : _a.value) ? `\n\tvalue = '${this.token.value}'` : '';
-        const token_pos = ((_b = this.token) === null || _b === void 0 ? void 0 : _b.start) ? `\n\tposition = [Line: ${this.token.start[1]}, Col: ${this.token.start[2]}]` : '';
-        const details = this.details ? `\n\t${this.details}` : '';
-        return `\t${this.constructor.name} - ${this.errorcode}.${token_info}${token_value}${token_pos}${details}`;
+        const info = this.token ?
+            `\n\ttoken type = ${this.token.type}` :
+            '';
+        const value = ((_a = this.token) === null || _a === void 0 ? void 0 : _a.value) ?
+            `\n\tvalue = '${this.token.value}'` :
+            '';
+        const pos = ((_b = this.token) === null || _b === void 0 ? void 0 : _b.start) ?
+            `\n\tposition = [Line: ${this.token.start[1]}, Col: ${this.token.start[2]}]` :
+            '';
+        const details = this.details ?
+            `\n\t${this.details}` :
+            '';
+        return `\t${this.constructor.name} - ${this.errorcode}.${info}${value}${pos}${details}`;
     }
 }
 exports.slError = slError;
@@ -34,6 +43,9 @@ class IllegalCharError extends slError {
     }
 }
 exports.IllegalCharError = IllegalCharError;
+class TokenError extends IllegalCharError {
+}
+exports.TokenError = TokenError;
 class SyntaxError extends slError {
 }
 exports.SyntaxError = SyntaxError;

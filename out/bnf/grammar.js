@@ -1,8 +1,75 @@
-entryPoint grammar ::= 
-    {statement: statements[]} + <SEMI>;
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.BNFGrammar = exports.BNFTable = void 0;
+exports.BNFTable = {
+    terminals: {
+        number: '0123456789',
+        alpha: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_',
+        operator: '|:=?+*&!$<>-',
+        delimiter: `(){}[],;`,
+        literal: `'`
+    },
+    skip: {
+        whitespace: ' \n\t\r',
+    },
+    reservedTypes: {
+        __REAL_CONST__: '__REAL_CONST__',
+        __INTEGER_CONST__: '__INTEGER_CONST__',
+        __EOF__: '__EOF__'
+    },
+    baseTypes: {
+        alpha: 'id',
+        number: 'number',
+        operator: 'operator',
+        delimiter: 'delimiter',
+        literal: 'literal'
+    },
+    specialTypes: {
+        COMMENT_INLINE: '//',
+        COMMENT_START: '/*',
+        COMMENT_END: '*/'
+    },
+    compoundTypes: {
+        alpha: {
+            MODIFIER: 'entry',
+        },
+        number: {},
+        operator: {
+            OR: '|',
+            AND: '&',
+            NOT: '!',
+            IF: '?',
+            EQUAL: '=',
+            CASH: '$',
+            REPEAT_0N: '*',
+            REPEAT_1N: '+',
+            ASSIGN: '::=',
+            COLON: ':',
+            ELSE: '->',
+            L_ANGLE: '<',
+            R_ANGLE: '>'
+        },
+        delimiter: {
+            L_PAREN: '(',
+            R_PAREN: ')',
+            L_BRACKET: '{',
+            R_BRACKET: '}',
+            L_SQBRACKET: '[',
+            R_SQBRACKET: ']',
+            COMMA: ',',
+            SEMI: ';'
+        },
+        literal: {
+            QUOTE: `'`
+        }
+    }
+};
+exports.BNFGrammar = `
+entry grammar ::= 
+    {statement: statements[]} + <SEMI> & <__EOF__>;
 
 statement ::= 
-    {empty} 
+    {empty}
     |[!<id>, <MODIFIER>] {define_stmnt};
 
 empty ::= 
@@ -106,3 +173,5 @@ property_assign ::=
     & <L_SQBRACKET> ?
         (<R_SQBRACKET>
         & $ is_list = 'true' $);
+`;
+//# sourceMappingURL=grammar.js.map

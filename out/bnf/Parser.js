@@ -1,10 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Parser = void 0;
+exports.BNFParser = void 0;
 const ParserBase_1 = require("../base/ParserBase");
-class Parser extends ParserBase_1.ParserBase {
+class BNFParser extends ParserBase_1.ParserBase {
     constructor(lexer) {
         super(lexer);
+        this.AST = this.parse();
     }
     parse() {
         return this.grammar();
@@ -17,6 +18,7 @@ class Parser extends ParserBase_1.ParserBase {
             this.eat(['SEMI']);
             node.statements.push(this.statement());
         }
+        this.eat(['__EOF__']);
         return node;
     }
     statement() {
@@ -122,7 +124,7 @@ class Parser extends ParserBase_1.ParserBase {
         let node = { __name__: 'conditional' };
         node.cond = this.tokens();
         if (['IF'].includes(this.cToken.type)) {
-            this.eat('IF');
+            this.eat(['IF']);
             node.then = this.concept();
             if (['ELSE'].includes(this.cToken.type)) {
                 this.eat(['ELSE']);
@@ -146,12 +148,12 @@ class Parser extends ParserBase_1.ParserBase {
     }
     token_id() {
         let node = { __name__: 'token_id' };
-        this.eat('L_ANGLE');
+        this.eat(['L_ANGLE']);
         if (['NOT'].includes(this.cToken.type)) {
             this.eat(['NOT']);
             node.dont_eat = 'true';
         }
-        node.token = this.eat('id');
+        node.token = this.eat(['id']);
         if (['COLON'].includes(this.cToken.type)) {
             node.property_name = this.property_assign();
         }
@@ -160,7 +162,7 @@ class Parser extends ParserBase_1.ParserBase {
     }
     token_list() {
         let node = { __name__: 'token_list' };
-        this.eat('L_SQBRACKET');
+        this.eat(['L_SQBRACKET']);
         if (['NOT'].includes(this.cToken.type)) {
             this.eat(['NOT']);
             node.dont_eat = 'true';
@@ -184,12 +186,12 @@ class Parser extends ParserBase_1.ParserBase {
     }
     control_id() {
         let node = { __name__: 'control_id' };
-        this.eat('L_BRACKET');
-        node.token = this.eat('id');
+        this.eat(['L_BRACKET']);
+        node.token = this.eat(['id']);
         if (['COLON'].includes(this.cToken.type)) {
             node.property_name = this.property_assign();
         }
-        this.eat('R_BRACKET');
+        this.eat(['R_BRACKET']);
         return node;
     }
     property_assign() {
@@ -204,5 +206,5 @@ class Parser extends ParserBase_1.ParserBase {
         return node;
     }
 }
-exports.Parser = Parser;
+exports.BNFParser = BNFParser;
 //# sourceMappingURL=Parser.js.map

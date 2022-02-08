@@ -14,7 +14,7 @@ class ParserBase {
         const token = this.cToken;
         if ((eatString && this.cToken.type === tokenType) ||
             (!eatString && tokenType.includes(this.cToken.type))) {
-            this.cToken = this.nToken; // change to stack for n-items overlapping rules?
+            this.cToken = this.nToken;
             this.nToken = this.lexer.nextToken();
         }
         else
@@ -24,6 +24,12 @@ class ParserBase {
     error(expected) {
         const error = new Errors_1.SyntaxError(Errors_1.ErrorCode.UNEXPECTED_TOKEN, this.cToken, `expected token type = ${expected}.`);
         throw new Error(error.msg);
+    }
+    reset(lexer, table) {
+        this.lexer = lexer;
+        this.table = table;
+        this.cToken = this.lexer.nextToken();
+        this.nToken = this.lexer.nextToken();
     }
 }
 exports.ParserBase = ParserBase;

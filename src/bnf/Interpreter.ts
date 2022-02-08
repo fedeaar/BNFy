@@ -1,82 +1,38 @@
-import { NodeVisitor, ParserNode } from '../base/InterpreterBase'
-import { Lexer } from '../base/Lexer';
-import { ParserBase } from '../base/ParserBase';
-import { TokenTable } from '../base/Token';
-import { saveFile } from '../Utils';
-import { Parser } from './Parser';
+import { ErrorCode, SemanticsError } from '../base/Errors';
+import { NodeVisitor } from '../base/InterpreterBase';
+import { ParserNode } from '../base/ParserBase';
+import { reduceTable, Token, TokenTable } from '../base/Token';
+import { formatNestedString } from '../Utils';
 
 
-export class Interpreter extends NodeVisitor {
+export class BNFInterpreter extends NodeVisitor {
     
     tree: ParserNode; 
-    generatedParser: {
+    table: string[];
+    generatedParserTree: {
         [rule: string]: {
+            start_node: ParserNode;
             literal: string;
             fn: () => ParserNode;
         }
     } = {};
-    entryPoint?: string;
-	
-    constructor (tree: ParserNode) {
-		
+    entryPoint?: Token;
+    control_identifiers = new Set<Token>();
+
+    constructor (tree: ParserNode, table: TokenTable) {
         super();
         this.tree = tree;
+        this.table = reduceTable(table);
+        this.interpret();
+        this.test_identifiers();
 	}
 
-    public useParser(lexer: Lexer) {
-        if (this.generatedParser && this.entryPoint) {
-	        let parser = new ParserBase(lexer);
-            for (const value in this.generatedParser) {
-                //@ts-expect-error
-                parser[value] = this.generatedParser[value].fn;
-            }
-            //@ts-expect-error
-            return parser[this.entryPoint]();
-        }
-    }
-
-    public create_class() {
-
-        const text = [
-            'export class Parser extends ParserBase {', 
-            '',
-            'constructor (lexer) {',
-            '   super(lexer);',
-            '}',
-            `${this.make_fns()}`,
-            '}'
-        ].join('\n');
-        return text;
-    }
-
-    private make_fns() {
-
-        this.interpret();
-        let text = '';
-        text += [`parse(){`,
-            `   return ${this.entryPoint? "this." + this.entryPoint + "();" : ""}`,
-            '}',
-            ''
-        ].join(`\n`);
-        for (let key in this.generatedParser) {
-            text += [
-                `${key}() {`,
-                `   ${this.generatedParser[key].literal}`,
-                `}`,
-                ''
-            ].join('\n');
-        }
-        return text;
-    }
-
     public interpret() {
-
         this.visit(this.tree);
-        return this.generatedParser;
+        return this.generatedParserTree;
     }
 
     private visit_grammar(node: ParserNode) {
-
         for (const statement of node.statements) { 
             this.visit(statement);
         }
@@ -89,83 +45,68 @@ export class Interpreter extends NodeVisitor {
     private visit_define_stmnt(node: ParserNode) {
         const code = [    
             `let node = {__name__: '${node.def_name}'};`,    
-            `${this.visit(node.definition)}`,
+            ...this.visit(node.definition),
             `return node;`
-        ].join(' ');
-        this.generatedParser[node.def_name] = {
-            literal: code,
-            fn: new Function(code) as () => ParserNode
+        ];
+        const text = formatNestedString(code);
+        this.generatedParserTree[node.def_name] = {
+            start_node: node,
+            literal: text,
+            fn: new Function(text) as () => ParserNode
         }
-        if (node.modifiers) {
-            for (const modifier of node.modifiers) {
-                if (modifier.value === 'entryPoint') {
-                    if (this.entryPoint) {
-                        //TODO armar bien
-                        throw new Error('semantics error, entryPoint already defined.')
-                    }
-                    this.entryPoint = node.def_name;
-                }
-            }
-        }
+        this.eval_modifiers(node);
     }
 
-    private visit_definition(node: ParserNode, cond?: ParserNode) { // TODO arreglar
-        let code = '';
+    private visit_definition(node: ParserNode, cond?: ParserNode) { // todo rearmar
+        let code = [];
         if (cond) {
             code = [
-                ` else if (${this.visit(cond, false, false)}.includes(this.cToken.type)) {`,
-                `${this.visit(cond)}`,        
-                `${this.visit(node.lNode)}`,
+                `else if (${this.visit(cond, false, false)}.includes(this.cToken.type)) {`,
+                this.visit(cond),        
+                this.visit(node.lNode),
                 `}`
-            ].join(' ');
+            ];
         } else {    
             code = [
-                ' else {', 
-                `${this.visit(node.lNode)}`,
+                'else {', 
+                this.visit(node.lNode),
                 '}'
-            ].join(' ');
+            ];
         }
         if (node.rNode.__name__ === 'definition') {    
-            code = this.visit(node.rNode, node.cond) + code;
+            code = [
+                ...this.visit(node.rNode, node.cond),
+                ...code
+            ];
         } else {
             code = [        
                 `if (${this.visit(node.cond, false, false)}.includes(this.cToken.type)) {`,        
-                `${this.visit(node.cond)}`,        
-                `${this.visit(node.rNode)}`,
-                `}`
-            ].join(' ') + code;
+                this.visit(node.cond),        
+                this.visit(node.rNode),
+                `}`,
+                ...code
+            ];
         }
         return code;
     }
 
     private visit_compound(node: ParserNode) {
         let code = [    
-            `${this.visit(node.lNode)}`,    
-            `${this.visit(node.rNode)}`
-        ].join(' ');
+            ...this.visit(node.lNode),    
+            ...this.visit(node.rNode)
+        ];
         return code;
     }
 
-    private visit_repetition(node: ParserNode) {
-        let code = ``;
-        let loop = [    
-            `(${this.visit(node.cond, false, false)}.includes(this.cToken.type)) {`,    
-            `${this.visit(node.cond)}`,    
-            `${this.visit(node.lNode)}`,
+    private visit_repetition(node: ParserNode) { 
+        const oneOrMore = node.operator.type === 'REPEAT_1N';
+        let code = [   
+            ...this.visit(node.lNode, true, true, true, oneOrMore),    
+            `while (${this.visit(node.cond, false, false)}.includes(this.cToken.type)) {`,
+            this.visit(node.cond),    
+            this.visit(node.lNode),
             `}`
-        ].join(' ');
-        if (node.operator.type === 'REPEAT_0N') {
-            code = [
-                `${this.visit(node.lNode, true, true, true, false)}`,
-                `while ${loop}` 
-            ].join(' ');
-        } 
-        else if (node.operator.type === 'REPEAT_1N') {
-            code = [
-                `${this.visit(node.lNode, true, true, true, true)}`,
-                `while ${loop}`
-            ].join(' ');
-        }
+        ];
         return code;
     }
 
@@ -174,40 +115,40 @@ export class Interpreter extends NodeVisitor {
     private visit_node_assign(node: ParserNode) {
         let code = '';
         let assign = 'node.' + node.assign_node.value;
-        if (assign == 'node.__node__') assign = 'node';
-        let value = '';
+        if (assign === 'node.__node__') assign = 'node';
         if (node.value.token.type === 'literal') {    
             code = `${assign} = ${this.visit(node.value)};`
         } else {    
             code = `${assign} = node.${this.visit(node.value)};` 
         }
-        return code
+        return [code];
     }
 
     private visit_id_or_string(node: ParserNode) {
-        return node.token.value;
+        return [node.token.value];
     }
 
     private visit_conditional(node: ParserNode) {
         let code = [    
             `if (${this.visit(node.cond, false, false)}.includes(this.cToken.type)) {`,    
-            `${this.visit(node.cond, true)}`,    
-            `${this.visit(node.then)}`,
+            this.visit(node.cond, true),    
+            this.visit(node.then),
             `}` 
-        ].join(' ');
+        ];
         if (node.else) {
-            code += [
+            code.push(
                 `else {`,        
-                `${this.visit(node.else)}`,
+                this.visit(node.else),
                 '}'
-            ].join(' ');
-        } else code += ' ';
+            );
+        } /* else code += ' '; */
         return code;
     }
 
     private visit_tokens(node: ParserNode) {}
     
     private visit_token_id(node: ParserNode, dont_eat=true, full_stmnt=true, init=false, push=true) {
+        this.test_token_id(node.token);
         let token_type = '';
         if (dont_eat && node.dont_eat) {
             token_type = '';
@@ -219,17 +160,17 @@ export class Interpreter extends NodeVisitor {
             if (token_type !== '') {
                 code = `this.eat(${token_type})`;
                 if (node.property_name) {
-                    code = this.visit(node.property_name, code, init, push);
+                    code = `${this.visit(node.property_name, code, init, push)}`;
                 } else code += ';';
             } 
         } else code = token_type;
-        return code;
+        return [code];
     }
 
     private visit_token_list(node: ParserNode, dont_eat=true, full_stmnt=true, init=false, push=true) {
         let token_list = '';
         if (!(dont_eat && node.dont_eat)) {    
-            token_list = this.visit(node.list, dont_eat);
+            token_list = `${this.visit(node.list, dont_eat)}`;
             if (token_list === '[]') token_list = '';
         } 
         let code = ''
@@ -237,46 +178,88 @@ export class Interpreter extends NodeVisitor {
             if (token_list !== '') {
                 code = `this.eat(${token_list})`;
                 if (node.property_name) {   
-                    code = this.visit(node.property_name, code, init, push);
+                    code = `${this.visit(node.property_name, code, init, push)}`;
                 } else code += ';';
             }
         } else code = token_list;
-        return code;
+        return [code];
     }
     
     private visit_token_chain(node: ParserNode, dont_eat=true) {
         let code = '[';
         for (let token_id of node.tokens) {
-            let token_repr = this.visit(token_id, dont_eat, false);
+            let token_repr = `${this.visit(token_id, dont_eat, false)}`;
             if (token_repr != '') code += token_repr.slice(1, -1) + ', ';
         }
         code = code.slice(0, -2);
         code += ']';
-        return code;
+        return [code];
     }
 
     private visit_control_id(node: ParserNode, dont_eat=true, full_stmnt=true, init=false, push=true) {
-        let code = `this.${node.token.value}()`;
+        this.control_identifiers.add(node.token);
+        let code = [`this.${node.token.value}()`];
         if (full_stmnt) {
             if (node.property_name) {        
                 code = this.visit(node.property_name, code, init, push);
-            } else code = 'node = ' + code + ';';
+            } else code = ['node = ' + code + ';'];
         } 
         return code;
     }
 
     private visit_property_assign(node: ParserNode, assign='', init=false, push=true) {
-        let code = '';
+        let code = [];
         if (node.is_list) {
             if (init) {        
-                code += `node.${node.token.value} = []; `
+                code.push(`node.${node.token.value} = [];`);
             }
             if (push) {    
-                code += `node.${node.token.value}.push(${assign});`
+                code.push(`node.${node.token.value}.push(${assign});`);
             }
         } else {    
-            code += `node.${node.token.value} = ${assign};`
+            code.push(`node.${node.token.value} = ${assign};`);
         }
         return code;
     }
+
+    private eval_modifiers(node: ParserNode) {
+        if (node.modifiers) {
+            for (const modifier of node.modifiers) {
+                switch (modifier.value) {
+                case 'entry':
+                    if (this.entryPoint) {
+                        const error = new SemanticsError(ErrorCode.DUPLICATE_ID, modifier, 
+                            `entryPoint already defined for '${this.entryPoint.toString()}' at ` + 
+                            `[ln: ${this.entryPoint.start[1]}, col: ${this.entryPoint.start[2]}].`)
+                        throw new Error(error.msg);
+                    } else {
+                        this.entryPoint = node.def_name;
+                    }
+                    break;
+                default:
+                    break;
+                }
+            }
+        }
+    }
+
+    private test_token_id(token: Token) {
+        if (!this.table.includes(token.toString())) {
+            const error = new SemanticsError(ErrorCode.ID_NOT_FOUND,
+                token, 
+                `token not defined in table: ${token}`);
+            throw Error(error.msg);
+        }
+    }
+    private test_identifiers() {
+        for (const identifier of this.control_identifiers) {
+            if (!(identifier.toString() in this.generatedParserTree)) {
+                const error = new SemanticsError(ErrorCode.ID_NOT_FOUND,
+                    identifier, 
+                    `non terminal not defined in grammar: ${identifier}`);
+                throw Error(error.msg);
+            }
+        }
+    }
 }
+
