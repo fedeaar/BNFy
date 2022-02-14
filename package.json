@@ -1,5 +1,5 @@
 {
-  "name": "Parsify",
+  "name": "BNFy",
   "version": "0.0.0",
   "description": "recursive descent parser for custom recursive descent parsers.",
   "main": "index.ts",
