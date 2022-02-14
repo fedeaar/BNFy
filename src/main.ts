@@ -1,112 +1,143 @@
-import { replaceAll } from "./Utils";
+// main.ts declares the GeneratedParser class and related functions. 
 
-import { ErrorCode, SemanticsError } from "./base/Errors";
+import { replaceAll } from "./Utils";
 
 import { Lexer } from "./base/Lexer";
 import { TokenTable } from "./base/Token";
-import { ParserBase, ParserNode } from "./base/ParserBase";
+import { BaseParser, ParserNode } from "./base/Parser";
 
-import { BNFParser } from "./bnf/Parser";
-import { BNFInterpreter } from "./bnf/Interpreter";
-import { BNFTable, BNFGrammar } from "./bnf/grammar";
+import { BNFyParser } from "./BNFy/Parser";
+import { BNFyInterpreter, ParserSchema } from "./BNFy/Interpreter";
+import { BNFyTable } from "./BNFy/grammar";
 
 
-export class GeneratedParser {
+export class GeneratedParser extends BaseParser 
+{
+	public __table__: TokenTable;
+	public __grammar__: string;
+	public __schema__: ParserSchema;
 
-	// generators
-	protected grammar: string;
-	protected BNFlexer: Lexer;
-	protected BNFparser: BNFParser;
-	protected BNFinterpreter: BNFInterpreter;
-	// parser
-	public parser: ParserBase & {
-		parse: () => ParserNode,
-		[syntax: string]: () => ParserNode
-	};
-	public table: TokenTable;
-
+	/**
+	 * a ready-to-use parser built from a BNFyGrammar and related token table.
+	 * @param grammarBNF the grammar for the parser.
+	 * @param tokenTable the table for the parser.
+	 */
 	constructor(grammarBNF: string, tokenTable: TokenTable) {
-		
-		this.grammar = grammarBNF;
-		this.BNFlexer = new Lexer(grammarBNF, BNFTable);
-		this.BNFparser = new BNFParser(this.BNFlexer);
-		this.BNFinterpreter = new BNFInterpreter(this.BNFparser.AST, tokenTable);
-		this.table = tokenTable;
-		this.parser = this.initParser();
-	}
-
-	private initParser() {
-		if (!this.BNFinterpreter.entryPoint) {
-			const error = new SemanticsError(ErrorCode.ID_NOT_FOUND, undefined, 
-				'no entry point for parser declared in bnf source.' +
-				'Use prefix `entry` to declare it in a syntax declaration.');
-			throw new Error(error.msg);
+		super();
+		this.__table__ = tokenTable;
+		this.__grammar__ = grammarBNF;
+		const BNFparser = new BNFyParser(BNFyTable);
+		const BNFinterpreter = new BNFyInterpreter(tokenTable); 
+		this.__schema__ = BNFinterpreter.interpret(BNFparser.parse(grammarBNF));
+		for (const value in this.__schema__.syntax) {
+			//@ts-expect-error: anonymous definition of methods. 
+			this[value] = this.__schema__.syntax[value].fn;
 		}
-		const tmp_lexer = new Lexer("", this.table);
-		const parser = new ParserBase(tmp_lexer) as GeneratedParser["parser"];
-		for (const value in this.BNFinterpreter.generatedParserTree) {
-			parser[value] = this.BNFinterpreter.generatedParserTree[value].fn;
-		}
-		parser.parse = parser[this.BNFinterpreter.entryPoint.toString()];
-		return parser;
 	}
 
 	public parse(source: string): ParserNode {
-		const lexer = new Lexer(source, this.table);
-		this.parser.reset(lexer);
-		return this.parser.parse();
+		const lexer = new Lexer(source, this.__table__);
+		this.set(lexer);
+		//@ts-expect-error: anonymous definition of methods.
+		return this[this.__schema__.entryPoint.toString()]();
+	}
+}
+
+
+export class GeneratedParserFromSchema extends BaseParser 
+{
+	public __schema__: ParserSchema;
+	public __table__: TokenTable;
+
+	/**
+	 * a ready-to-use parser built from a ParserSchema.
+	 * @param schema the schema to use.
+	 */
+	constructor(schema: ParserSchema) {
+		super();
+		this.__schema__ = schema;
+		this.__table__ = schema.table;
+		for (const value in this.__schema__.syntax) {
+			//@ts-expect-error: anonymous definition of methods. 
+			this[value] = this.__schema__.syntax[value].fn;
+		}
 	}
 
-	public createParserSourceFile(interpreter: BNFInterpreter = this.BNFinterpreter): string {
-		const text = [
-			'class Parser extends ParserBase {', 
-			'',
-			'\tconstructor(lexer) {',
-			'\t\tsuper(lexer);',
-			'\t\tthis.AST = this.parse();',
-			'\t}',
-			`\tparse() {`,
-			`\t\treturn ${interpreter.entryPoint? "this." + interpreter.entryPoint + "();" : ""}`,
-			'\t}',
-			make_fns(interpreter),
-			'}'
-		].join('\n');
-		function make_fns(interpreter: BNFInterpreter): string {
-			let fnText = ''
-			for (let key in interpreter.generatedParserTree) {
-				fnText += `\n\t${key}() {${replaceAll(interpreter.generatedParserTree[key].literal, '\n', '\n\t\t')}\n\t}`;
-			}
-			return fnText;
+	public parse(source: string): ParserNode {
+		const lexer = new Lexer(source, this.__table__);
+		this.set(lexer);
+		//@ts-expect-error: anonymous definition of methods.
+		return this[this.__schema__.entryPoint.toString()]();
+	}
+}
+
+/**
+ * creates a base parser source file from a schema.
+ * @param {ParserSchema} schema the schema.
+ * @returns {string} a source file string.
+ */
+export function createParserSourceFile(schema: ParserSchema): string {
+	const text = [
+		'class Parser extends ParserBase {', 
+		'',
+		'\tconstructor(table) {',
+		'\t\tsuper();',
+		'\t\tthis.__table__ = table;',
+		'\t}',
+		'',
+		`\tparse(source) {`,
+		`\t\tconst lexer = new Lexer(source, this.__table__);`,
+		`\t\tthis.set(lexer);`, 
+		`\t\treturn this.${schema.entryPoint}();`,
+		'\t}',
+		make_fns(schema),
+		'}'
+	].join('\n');
+	function make_fns(schema: ParserSchema): string {
+		let fnText = ''
+		for (let key in schema.syntax) {
+			fnText += `\n\t${key}() {${replaceAll(schema.syntax[key].literal, '\n', '\n\t\t')}\n\t}\n`;
 		}
-		return text;
+		return fnText.slice(0, -1);
 	}
-	
-	public createInterpreterSourceFile(interpreter: BNFInterpreter = this.BNFinterpreter): string {
-		const text = [
-			'class Interpreter extends NodeVisitor {', 
-			'',
-			'\tconstructor (AST) {',
-			'\t\tsuper();',
-			'\t\tthis.tree = AST;',
-			'\t}',
-			`\tinterpret() {`,
-			`\t\treturn this.visit(this.tree);`,
-			'\t}',
-			make_fns(interpreter),
-			'}'
-		].join('\n');
-		function make_fns(interpreter: BNFInterpreter): string {
-			let fnText = ''
-			for (let key in interpreter.generatedParserTree) {
-				fnText += `\n\tvisit_${key}() {}`;
-			}
-			return fnText;
+	return text;
+}
+
+/**
+ * creates a base interpreter source file from a schema.
+ * @param {ParserSchema} schema the schema.
+ * @returns {string} a source file string.
+ */
+export function createInterpreterSourceFile(schema: ParserSchema): string {
+	const text = [
+		'class Interpreter extends NodeVisitor {', 
+		'',
+		'\tconstructor () {',
+		'\t\tsuper();',
+		'\t}',
+		'',
+		`\tinterpret(tree) {`,
+		`\t\treturn this.visit(tree);`,
+		'\t}',
+		make_fns(schema),
+		'}'
+	].join('\n');
+	function make_fns(schema: ParserSchema): string {
+		let fnText = ''
+		for (let key in schema.syntax) {
+			fnText += `\n\tvisit_${key}() {}\n`;
 		}
-		return text;
+		return fnText.slice(0, -1);
 	}
-	
-	public createSourceFile(interpreter: BNFInterpreter = this.BNFinterpreter): string {
-		return this.createInterpreterSourceFile(interpreter) + 
-		"\n\n\n" + this.createParserSourceFile(interpreter);
-	}
+	return text;
+}
+
+/**
+ * creates a base source file from a schema.
+ * @param {ParserSchema} schema the schema.
+ * @returns {string} a source file string.
+ */
+export function createSourceFile(schema: ParserSchema): string {
+	return createInterpreterSourceFile(schema) + 
+	"\n\n\n" + createParserSourceFile(schema);
 }

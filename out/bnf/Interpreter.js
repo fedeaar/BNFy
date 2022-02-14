@@ -2,10 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BNFInterpreter = void 0;
 const Errors_1 = require("../base/Errors");
-const InterpreterBase_1 = require("../base/InterpreterBase");
+const Interpreter_1 = require("../base/Interpreter");
 const Token_1 = require("../base/Token");
 const Utils_1 = require("../Utils");
-class BNFInterpreter extends InterpreterBase_1.NodeVisitor {
+class BNFInterpreter extends Interpreter_1.NodeVisitor {
     constructor(tree, table) {
         super();
         this.generatedParserTree = {};
@@ -44,7 +44,7 @@ class BNFInterpreter extends InterpreterBase_1.NodeVisitor {
         let code = [];
         if (cond) {
             code = [
-                `else if (${this.visit(cond, false, false)}.includes(this.cToken.type)) {`,
+                `else if (${this.visit(cond, false, false)}.includes(this.__cToken__.type)) {`,
                 this.visit(cond),
                 this.visit(node.lNode),
                 `}`
@@ -65,7 +65,7 @@ class BNFInterpreter extends InterpreterBase_1.NodeVisitor {
         }
         else {
             code = [
-                `if (${this.visit(node.cond, false, false)}.includes(this.cToken.type)) {`,
+                `if (${this.visit(node.cond, false, false)}.includes(this.__cToken__.type)) {`,
                 this.visit(node.cond),
                 this.visit(node.rNode),
                 `}`,
@@ -85,7 +85,7 @@ class BNFInterpreter extends InterpreterBase_1.NodeVisitor {
         const oneOrMore = node.operator.type === 'REPEAT_1N';
         let code = [
             ...this.visit(node.lNode, true, true, true, oneOrMore),
-            `while (${this.visit(node.cond, false, false)}.includes(this.cToken.type)) {`,
+            `while (${this.visit(node.cond, false, false)}.includes(this.__cToken__.type)) {`,
             this.visit(node.cond),
             this.visit(node.lNode),
             `}`
@@ -111,7 +111,7 @@ class BNFInterpreter extends InterpreterBase_1.NodeVisitor {
     }
     visit_conditional(node) {
         let code = [
-            `if (${this.visit(node.cond, false, false)}.includes(this.cToken.type)) {`,
+            `if (${this.visit(node.cond, false, false)}.includes(this.__cToken__.type)) {`,
             this.visit(node.cond, true),
             this.visit(node.then),
             `}`
@@ -134,7 +134,7 @@ class BNFInterpreter extends InterpreterBase_1.NodeVisitor {
         let code = '';
         if (full_stmnt) {
             if (token_type !== '') {
-                code = `this.eat(${token_type})`;
+                code = `this.__eat__(${token_type})`;
                 if (node.property_name) {
                     code = `${this.visit(node.property_name, code, init, push)}`;
                 }
@@ -156,7 +156,7 @@ class BNFInterpreter extends InterpreterBase_1.NodeVisitor {
         let code = '';
         if (full_stmnt) {
             if (token_list !== '') {
-                code = `this.eat(${token_list})`;
+                code = `this.__eat__(${token_list})`;
                 if (node.property_name) {
                     code = `${this.visit(node.property_name, code, init, push)}`;
                 }

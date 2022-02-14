@@ -1,5 +1,5 @@
-import { NodeVisitor } from '../src/base/InterpreterBase';
-import { ParserNode } from '../src/base/ParserBase';
+import { NodeVisitor } from '../src/base/Interpreter';
+import { ParserNode } from '../src/base/Parser';
 import { TokenTable } from '../src/base/Token'
 
 

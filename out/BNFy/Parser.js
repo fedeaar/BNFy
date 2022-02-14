@@ -1,13 +1,25 @@
 "use strict";
+// ./bnf/Parser.ts defines the parser for the BNFy grammar.
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.BNFParser = void 0;
+exports.BNFyParser = void 0;
+const Lexer_1 = require("../base/Lexer");
 const Parser_1 = require("../base/Parser");
-class BNFParser extends Parser_1.BaseParser {
-    constructor(lexer) {
-        super(lexer);
-        this.AST = this.parse();
+class BNFyParser extends Parser_1.BaseParser {
+    /**
+     * BNFyParser parses the BNFy grammar.
+     * @param {TokenTable} table the underlying token table for the parser.
+     */
+    constructor(table) {
+        super();
+        this.__table__ = table;
     }
-    parse() {
+    /**
+     * parses a source string.
+     * @returns {ParserNode} an abstract syntax tree.
+     */
+    parse(source) {
+        const lexer = new Lexer_1.Lexer(source, this.__table__);
+        this.set(lexer);
         return this.grammar();
     }
     grammar() {
@@ -206,5 +218,5 @@ class BNFParser extends Parser_1.BaseParser {
         return node;
     }
 }
-exports.BNFParser = BNFParser;
+exports.BNFyParser = BNFyParser;
 //# sourceMappingURL=Parser.js.map

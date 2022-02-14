@@ -1,8 +1,9 @@
-import { TokenTable } from '../base/Token'
-
-
-export const BNFTable : TokenTable = {
-    terminals : {
+"use strict";
+// grammar.ts declares the grammar and TokenTable for the BNFyParser.
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.BNFyGrammar = exports.BNFyTable = void 0;
+exports.BNFyTable = {
+    terminals: {
         number: '0123456789',
         alpha: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_',
         operator: '|:=?+*&!$<>-',
@@ -35,38 +36,36 @@ export const BNFTable : TokenTable = {
         },
         number: {},
         operator: {
-            OR : '|',
-            AND : '&',
-            NOT : '!',
-            IF  : '?',
-            EQUAL : '=',
-            CASH : '$',
-            REPEAT_0N : '*',
-            REPEAT_1N : '+',
-            ASSIGN : '::=',
-            COLON   : ':',
-            ELSE : '->',
-            L_ANGLE : '<',
-            R_ANGLE : '>'
+            OR: '|',
+            AND: '&',
+            NOT: '!',
+            IF: '?',
+            EQUAL: '=',
+            CASH: '$',
+            REPEAT_0N: '*',
+            REPEAT_1N: '+',
+            ASSIGN: '::=',
+            COLON: ':',
+            ELSE: '->',
+            L_ANGLE: '<',
+            R_ANGLE: '>'
         },
-        delimiter : {
-            L_PAREN : '(',
-            R_PAREN : ')',
-            L_BRACKET : '{',
-            R_BRACKET : '}',
-            L_SQBRACKET : '[',
-            R_SQBRACKET : ']',
-            COMMA   : ',',
-            SEMI    : ';'
+        delimiter: {
+            L_PAREN: '(',
+            R_PAREN: ')',
+            L_BRACKET: '{',
+            R_BRACKET: '}',
+            L_SQBRACKET: '[',
+            R_SQBRACKET: ']',
+            COMMA: ',',
+            SEMI: ';'
         },
-        literal : {
-            QUOTE   : `'`
+        literal: {
+            QUOTE: `'`
         }
     }
-}
-
-
-export const BNFGrammar = `
+};
+exports.BNFyGrammar = `
 entry grammar ::= 
     {statement: statements[]} + <SEMI> & <__EOF__>;
 
@@ -176,3 +175,4 @@ property_assign ::=
         (<R_SQBRACKET>
         & $ is_list = 'true' $);
 `;
+//# sourceMappingURL=grammar.js.map

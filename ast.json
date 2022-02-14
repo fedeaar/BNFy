@@ -1,0 +1,69 @@
+{
+    "__name__": "expression",
+    "lNode": {
+        "__name__": "factor",
+        "constant": {
+            "__name__": "constant",
+            "token": {
+                "type": "INTEGER_CONST",
+                "value": "1",
+                "start": [
+                    1,
+                    1,
+                    2
+                ]
+            }
+        }
+    },
+    "operator": {
+        "type": "PLUS",
+        "value": "+",
+        "start": [
+            3,
+            1,
+            4
+        ]
+    },
+    "rNode": {
+        "__name__": "term",
+        "lNode": {
+            "__name__": "factor",
+            "constant": {
+                "__name__": "constant",
+                "token": {
+                    "type": "INTEGER_CONST",
+                    "value": "2",
+                    "start": [
+                        5,
+                        1,
+                        6
+                    ]
+                }
+            }
+        },
+        "operator": {
+            "type": "TIMES",
+            "value": "*",
+            "start": [
+                7,
+                1,
+                8
+            ]
+        },
+        "rNode": {
+            "__name__": "factor",
+            "constant": {
+                "__name__": "constant",
+                "token": {
+                    "type": "INTEGER_CONST",
+                    "value": "3",
+                    "start": [
+                        9,
+                        1,
+                        10
+                    ]
+                }
+            }
+        }
+    }
+}

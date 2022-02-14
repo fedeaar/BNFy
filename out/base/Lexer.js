@@ -1,35 +1,54 @@
 "use strict";
+// Lexer.ts handles the identification of tokens during the parsing of a source string.
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Lexer = void 0;
 const Utils_1 = require("../Utils");
+const Errors_1 = require("./Errors");
 const Position_1 = require("./Position");
 const Token_1 = require("./Token");
-const Errors_1 = require("./Errors");
 class Lexer {
-    constructor(text, table) {
+    /**
+     * Handles the identification of tokens in a source string.
+     * @param {string} source a string to parse.
+     * @param {TokenTable} table the possible tokens and allowed character terminals.
+     */
+    constructor(source, table) {
         this.position = new Position_1.PositionHandler(-1, 1, 0);
-        this.text = text;
-        this.builder = new TokenBuilderCtx(table);
+        this.source = source;
         this.table = table;
+        this.builder = new TokenBuilderCtx(table);
         this.advance();
     }
+    /**
+     * advances the current character.
+     * @param {number} n how many characters to advance.
+     */
     advance(n = 1) {
         while (n-- > 0) {
             this.position.advance(this.currentChar);
         }
-        let pos = this.position.index;
-        if (pos < this.text.length) {
-            this.currentChar = this.text[pos];
+        const pos = this.position.index;
+        if (pos < this.source.length) {
+            this.currentChar = this.source[pos];
         }
         else {
             this.currentChar = undefined;
         }
     }
+    /**
+     * peeks into the source file.
+     * @param {mumber} n the amount of characters to peek at.
+     * @returns {string} a substring of the source, from the current character to n (exclusive).
+     */
     peek(n = 1) {
         const pos = this.position.index;
-        const peeked = this.text.slice(pos, pos + n);
+        const peeked = this.source.slice(pos, pos + n);
         return peeked;
     }
+    /**
+     * tries to find the next valid token in the source string.
+     * @returns {Token} the next token.
+     */
     nextToken() {
         var _a;
         while (this.currentChar) {
@@ -53,8 +72,13 @@ class Lexer {
                     this.error(Errors_1.ErrorCode.ILLEGAL_CHAR, this.position.position);
             }
         }
-        return new Token_1.Token(this.builder.table.reservedTypes.__EOF__, this.position.position);
+        return new Token_1.Token(this.table.reservedTypes.__EOF__, this.position.position);
     }
+    /**
+     * builds and asserts the validity of the next token.
+     * @param {TokenBuilder} generator the building rules for the expected token type.
+     * @returns the built Token
+     */
     buildToken(generator) {
         let value = '';
         const start = this.position.position;
@@ -71,6 +95,10 @@ class Lexer {
         }
         return generator.return(value, start);
     }
+    /**
+     * handles comment skipping.
+     * @param {string} endif the skipping end condition.
+     */
     skipComment(endif) {
         while (this.currentChar &&
             this.peek(endif.length) !== endif) {
@@ -79,6 +107,11 @@ class Lexer {
         if (this.currentChar)
             this.advance(endif.length);
     }
+    /**
+     * handles error throwing.
+     * @param {ErrorCode} type the type for the error.
+     * @param {position} position where it ocurred.
+     */
     error(type, position) {
         let error = null;
         switch (type) {
@@ -95,13 +128,23 @@ class Lexer {
 }
 exports.Lexer = Lexer;
 class TokenBuilderCtx {
+    /**
+     * TokenBuilderCtx handles assigning the correct building rules for Lexer.buildToken().
+     * @param table the possible tokens and allowed character terminals.
+     */
     constructor(table) {
         this.table = table;
-        this.compoundMap = this.setCompoundMap(table.compoundTypes);
+        this.compoundMap = createCompoundMap(table.compoundTypes);
     }
+    /**
+     * assings a builder based on the current character being processed by the lexer.
+     * @param {string} currentChar the last read character.
+     * @returns {TokenBuilder | "skip" | null} the builder, a "skip" command or a null
+     * value on failure to assign.
+     */
     getBuilder(currentChar) {
         let builder = null;
-        if (this.table.skip.whitespace.includes(currentChar)) {
+        if (this.table.skip.whitespace.includes(currentChar)) { // move to lexer
             builder = "skip";
         }
         else if (this.table.terminals.number.includes(currentChar)) {
@@ -122,26 +165,9 @@ class TokenBuilderCtx {
         //@ts-ignore: "skip" interpreted as string.
         return builder;
     }
-    setCompoundMap(compoundTypes) {
-        const compoundMap = {};
-        for (const baseType in compoundTypes) {
-            compoundMap[baseType] = {};
-            //@ts-ignore: baseType interpreted as string.
-            const baseTypeCompounds = compoundTypes[baseType];
-            for (const type in baseTypeCompounds) {
-                const value = baseTypeCompounds[type];
-                if (typeof value === 'string') {
-                    compoundMap[baseType][value] = type;
-                }
-                else {
-                    for (const innerValue of value) {
-                        compoundMap[baseType][innerValue] = type;
-                    }
-                }
-            }
-        }
-        return compoundMap;
-    }
+    /**
+     * @returns the build rules for a number token.
+     */
     numberTokenBuilder() {
         const includeFn = (currentChar) => {
             return this.table.terminals.number.includes(currentChar) || currentChar === '.';
@@ -172,6 +198,9 @@ class TokenBuilderCtx {
         };
         return builder;
     }
+    /**
+     * @returns the builder rules for a word token.
+     */
     wordTokenBuilder() {
         const includeFn = (currentChar) => {
             return (this.table.terminals.alpha.includes(currentChar) ||
@@ -194,6 +223,9 @@ class TokenBuilderCtx {
         };
         return builder;
     }
+    /**
+     * @returns the builder rules for an operator token.
+     */
     operatorTokenBuilder() {
         const includeFn = (currentChar, currentValue) => {
             let include = false;
@@ -216,6 +248,9 @@ class TokenBuilderCtx {
         };
         return builder;
     }
+    /**
+     * @returns the builder rules for a delimiter token.
+     */
     delimiterTokenBuilder() {
         const includeFn = (currentChar, currentValue) => {
             return (0, Utils_1.isKeySubstring)(currentValue + currentChar, this.compoundMap.delimiter);
@@ -232,6 +267,9 @@ class TokenBuilderCtx {
         };
         return builder;
     }
+    /**
+     * @returns the builder rules for a string literal token.
+     */
     literalTokenBuilder() {
         const includeFn = (currentChar, currentValue) => {
             let include = true;
@@ -252,5 +290,26 @@ class TokenBuilderCtx {
         };
         return builder;
     }
+}
+/** creates a compound map. */
+function createCompoundMap(compoundTypes) {
+    const compoundMap = {};
+    for (const baseType in compoundTypes) {
+        compoundMap[baseType] = {};
+        //@ts-ignore: baseType interpreted as string.
+        const baseTypeCompounds = compoundTypes[baseType];
+        for (const type in baseTypeCompounds) {
+            const value = baseTypeCompounds[type];
+            if (typeof value === 'string') {
+                compoundMap[baseType][value] = type;
+            }
+            else {
+                for (const innerValue of value) {
+                    compoundMap[baseType][innerValue] = type;
+                }
+            }
+        }
+    }
+    return compoundMap;
 }
 //# sourceMappingURL=Lexer.js.map

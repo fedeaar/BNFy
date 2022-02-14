@@ -2,42 +2,52 @@
 import { expect } from 'chai';
 // base
 import { GeneratedParser } from '../src/main';
-import { BNFTable, BNFGrammar } from '../src/bnf/grammar';
-import { BNFInterpreter } from '../src/bnf/Interpreter';
-import { BNFParser } from '../src/bnf/Parser';
-import { Lexer } from '../src/base/Lexer';
+import { BNFyTable, BNFyGrammar } from '../src/BNFy/grammar';
+import { BNFyInterpreter } from '../src/BNFy/Interpreter';
+import { BNFyParser } from '../src/BNFy/Parser';
 import { ErrorCode } from '../src/base/Errors';
-import { throws } from 'assert';
 
 
-describe('error catching', () => {
+describe('error catching:', () => {
 
-    it('should throw on illegal char errors.', () => {
-        let grammar = '`'
-        let lexer = new Lexer(grammar, BNFTable);
+    describe('for the lexer:', () => {
+        it('should throw on illegal char errors.', () => {
+            let grammar = '`';
+            expect(() =>new BNFyParser(BNFyTable).parse(grammar)).to.throw(Error, new RegExp(ErrorCode.ILLEGAL_CHAR));
+        });
+        it('should throw on unknown tokens.', () => {
+            let grammar = 'entry test :::= <id>;'
+            expect(() =>new BNFyParser(BNFyTable).parse(grammar)).to.throw(Error, new RegExp(ErrorCode.TOKEN_ERROR));
+        })
+    });
 
-        expect(() => new BNFParser(lexer)).to.throw(Error, new RegExp(ErrorCode.ILLEGAL_CHAR));
+    describe('for the parser:', () => {
+        it('should throw on unexpected tokens.', () => {
+            let grammar = 'entry test ::= <id> <unexpected>;'
+            expect(() => new BNFyParser(BNFyTable).parse(grammar)).to.throw(Error, new RegExp(ErrorCode.UNEXPECTED_TOKEN));
+        });
     });
-    it('should throw on unknown tokens.', () => {
-        let grammar = 'entry test :::= <id>;'
-        let lexer = new Lexer(grammar, BNFTable);
-        expect(() => new BNFParser(lexer)).to.throw(Error, new RegExp(ErrorCode.TOKEN_ERROR));
-    });
-    it('should throw on unexpected tokens.', () => {
-        let grammar = 'entry test ::= <id> <fire>;'
-        let lexer = new Lexer(grammar, BNFTable);
-        expect(() => new BNFParser(lexer)).to.throw(Error, new RegExp(ErrorCode.UNEXPECTED_TOKEN));
-    });
-    it('should throw on undefined non-terminals.', () => {
-        let grammar = 'entry test ::= {unknown: x};';
-        expect(() => new GeneratedParser(grammar, BNFTable)).to.throw(Error, new RegExp(ErrorCode.ID_NOT_FOUND));
-    });
-    it('should throw on undefined terminals.', () => {
-        let grammar = 'entry test ::= <unknown: x>;';
-        expect(() => new GeneratedParser(grammar, BNFTable)).to.throw(Error, new RegExp(ErrorCode.ID_NOT_FOUND));
-    });
-    it('should throw on repeated entry modifier.', () => {
-        let grammar = 'entry test ::= <id>; entry nope ::= <id>;';
-        expect(() => new GeneratedParser(grammar, BNFTable)).to.throw(Error, new RegExp(ErrorCode.DUPLICATE_ID));
+
+    describe('for the interpreter:', () => {
+        it('should throw on malformed ASTs.', () => {
+            const interpreter = new BNFyInterpreter(BNFyTable);
+            expect(() => interpreter.interpret({__name__: 'not_grammar'})).to.throw(Error, new RegExp(ErrorCode.MALFORMED_AST));
+        });
+        it('should throw on undefined non-terminals.', () => {
+            let grammar = 'entry test ::= {unknown: x};';
+            expect(() => new GeneratedParser(grammar, BNFyTable)).to.throw(Error, new RegExp(ErrorCode.ID_NOT_FOUND));
+        });
+        it('should throw on undefined terminals.', () => {
+            let grammar = 'entry test ::= <unknown: x>;';
+            expect(() => new GeneratedParser(grammar, BNFyTable)).to.throw(Error, new RegExp(ErrorCode.ID_NOT_FOUND));
+        });
+        it('should throw on repeated entry modifier.', () => {
+            let grammar = 'entry test ::= <id>; entry nope ::= <id>;';
+            expect(() => new GeneratedParser(grammar, BNFyTable)).to.throw(Error, new RegExp(ErrorCode.DUPLICATE_ID));
+        });
+        it('should throw on no entry modifier.', () => {
+            let grammar = 'test ::= <id>;';
+            expect(() => new GeneratedParser(grammar, BNFyTable)).to.throw(Error, new RegExp(ErrorCode.NO_ENTRYPOINT));
+        });
     });
 });
