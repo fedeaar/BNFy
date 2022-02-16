@@ -120,6 +120,6 @@ non_terminal ::=
 property_assign ::= 
     <COLON> 
     <P_MODIFIER: modifiers[]>* 
-    <id: name>
+    <alpha: name>
     (<L_SQBRACKET: modifiers[]> <R_SQBRACKET>)^ ;
 `;

@@ -37,15 +37,36 @@ export class BaseParser
 		if (!this.__cToken__ || !this.__nToken__ || !this.__lexer__) {
 			throw new Error ('no lexer set for parsing.');
 		}
+		this.__expect__(tokenType);
+		const token = this.__cToken__;
+		this.__cToken__ = this.__nToken__; 
+		this.__nToken__ = this.__lexer__.nextToken();
+		return token;
+	}
+
+	protected __expect__(tokenType: string | string[]): void {
 		const eatString = typeof tokenType === 'string';
-        const token = this.__cToken__;
 		if ((eatString && this.__cToken__.type === tokenType) || 
 			(!eatString && tokenType.includes(this.__cToken__.type))) {
-			this.__cToken__ = this.__nToken__; 
-			this.__nToken__ = this.__lexer__.nextToken();
+			return
 		}
 		else this.__error__(tokenType);
-		return token;
+	}
+
+	protected __try__(fn: () => ParserNode): ParserNode | null {
+		let to_catch = true;
+		// will catch only the first 'wrong-way' error
+		try {
+			const res = fn();
+			return res;
+		} catch(error) {
+			if (to_catch) {
+				to_catch = false;
+				return null;
+			} else {
+				throw error;
+			}
+		}
 	}
 
 	/**
@@ -58,19 +79,6 @@ export class BaseParser
 			this.__cToken__, 
 			`expected token type = ${expected}.`);
 		throw new Error(error.msg);
-	}
-
-	protected __try__(fn: () => ParserNode): ParserNode | null {
-		try {
-			return fn();
-		} catch(error) {
-			//@ts-expect-error: error must have unknown or any type ?
-			if (new RegExp(ErrorCode.UNEXPECTED_TOKEN).test(error.msg)) {
-				return null;
-			} else {
-				throw error;
-			}
-		}
 	}
 
 	/**

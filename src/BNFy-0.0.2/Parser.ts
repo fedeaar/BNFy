@@ -34,13 +34,9 @@ export class BNFyParser extends BaseParser {
 	private grammar(): ParserNode {
 		let node: ParserNode = {__node__: 'grammar'};
 		node.statements = [];
-		// repeat statements that start with a terminal should use that
-		// as the repeat condition. If it starts with a non terminal,
-		// recursively get all terminals up to the first 
-		// non optional terminal (fnot) (ie that is not modified by * ? ^).
-		// this includes all 'or' fnot
-		while (['SEMI', 'D_MODIFIER', 'alpha'].includes(this.__cToken__.type)) {
-			node.statements.push(this.statement());
+		let maybe = null; 
+		while (maybe = this.__try__(() => this.statement())) {
+			node.statements.push(maybe);
 			this.__eat__(['SEMI']);
 		}
 		this.__eat__(['__EOF__']);
@@ -49,8 +45,9 @@ export class BNFyParser extends BaseParser {
 
 	private statement(): ParserNode {
 		let node: ParserNode = {__node__: 'statement'};
-		if (['alpha', 'D_MODIFIER'].includes(this.__cToken__.type)) {
-			node = this.declaration();
+		let maybe = null;
+		if (maybe = this.__try__(() => this.declaration())) {
+			node = maybe;
 		} else {
 			node = this.empty();
 		}
@@ -59,6 +56,7 @@ export class BNFyParser extends BaseParser {
 
 	private empty(): ParserNode {
 		let node: ParserNode = {__node__: 'empty'};
+		this.__expect__(["SEMI"]);
 		return node;
 	}
 
@@ -92,8 +90,9 @@ export class BNFyParser extends BaseParser {
 		let node: ParserNode = {__node__: 'sequence'};
 		node.sequence = [];
 		node.sequence.push(this.repetition());
-		while (['L_PAREN', 'L_ANGLE', 'L_BRACKET'].includes(this.__cToken__.type)) {
-			node.sequence.push(this.repetition());
+		let maybe = null;
+		while (maybe = this.__try__(() => this.repetition())) {
+			node.sequence.push(maybe);
 		}
 		return node;
 	}
@@ -129,12 +128,14 @@ export class BNFyParser extends BaseParser {
 
 	private identity(): ParserNode {
 		let node: ParserNode = {__node__: 'identity'};
+		//ojo
+		let maybe = null;
 		if (['L_PAREN'].includes(this.__cToken__.type)) {
 			this.__eat__(['L_PAREN']);
 			node = this.syntax();
 			this.__eat__(['R_PAREN']);
-		} else if (['L_BRACKET'].includes(this.__cToken__.type)) {
-			node = this.non_terminal();
+		} else if (maybe = this.__try__(() => this.non_terminal())) {
+			node = maybe;
 		} else {
 			node = this.terminal();
 		}
@@ -153,8 +154,9 @@ export class BNFyParser extends BaseParser {
 			this.__eat__(['COMMA']);
 			node.tokens.push(this.__eat__(['alpha']));
 		}
-		if (['COLON'].includes(this.__cToken__.type)) {
-			node.property_name = this.property_assign();
+		let maybe = null;
+		if (maybe = this.__try__(() => this.property_assign())) {
+			node.property_name = maybe;
 		}
 		this.__eat__(['R_ANGLE']);
 		return node;
@@ -164,8 +166,9 @@ export class BNFyParser extends BaseParser {
 		let node: ParserNode = {__node__: 'non_terminal'};
 		this.__eat__(['L_BRACKET']);
 		node.token = this.__eat__(['alpha']);
-		if (['COLON'].includes(this.__cToken__.type)) {
-			node.property_name = this.property_assign();
+		let maybe = null;
+		if (maybe = this.__try__(() => this.property_assign())) {
+			node.property_name = maybe;
 		}
 		this.__eat__(['R_BRACKET']);
 		return node;
