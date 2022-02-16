@@ -6,9 +6,9 @@ import { Lexer } from "./base/Lexer";
 import { TokenTable } from "./base/Token";
 import { BaseParser, ParserNode } from "./base/Parser";
 
-import { BNFyParser } from "./BNFy/Parser";
-import { BNFyInterpreter, ParserSchema } from "./BNFy/Interpreter";
-import { BNFyTable } from "./BNFy/grammar";
+import { BNFyParser } from "./BNFy-0.0.1/Parser";
+import { BNFyInterpreter, ParserSchema } from "./BNFy-0.0.1/Interpreter";
+import { BNFyTable } from "./BNFy-0.0.1/grammar";
 
 
 export class GeneratedParser extends BaseParser 
@@ -78,7 +78,7 @@ export class GeneratedParserFromSchema extends BaseParser
  */
 export function createParserSourceFile(schema: ParserSchema): string {
 	const text = [
-		'class Parser extends ParserBase {', 
+		'class Parser extends BaseParser {', 
 		'',
 		'\tconstructor(table) {',
 		'\t\tsuper();',

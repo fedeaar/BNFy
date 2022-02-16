@@ -2,11 +2,10 @@
 import { expect } from 'chai';
 // base
 import { createParserSourceFile, createSourceFile, GeneratedParser, GeneratedParserFromSchema } from '../src/main';
-import { BNFyTable, BNFyGrammar } from '../src/BNFy/grammar';
-import { BNFyInterpreter } from '../src/BNFy/Interpreter';
+import { BNFyTable, BNFyGrammar } from '../src/BNFy-0.0.1/grammar';
+import { BNFyInterpreter } from '../src/BNFy-0.0.1/Interpreter';
 import { CalcTable, CalcGrammar, CalcInterpreter } from './calculator.helper'
 import { saveFile } from '../src/Utils';
-
 
 describe('generate self:', () => {
     

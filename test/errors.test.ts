@@ -2,9 +2,9 @@
 import { expect } from 'chai';
 // base
 import { GeneratedParser } from '../src/main';
-import { BNFyTable, BNFyGrammar } from '../src/BNFy/grammar';
-import { BNFyInterpreter } from '../src/BNFy/Interpreter';
-import { BNFyParser } from '../src/BNFy/Parser';
+import { BNFyTable, BNFyGrammar } from '../src/BNFy-0.0.1/grammar';
+import { BNFyInterpreter } from '../src/BNFy-0.0.1/Interpreter';
+import { BNFyParser } from '../src/BNFy-0.0.1/Parser';
 import { ErrorCode } from '../src/base/Errors';
 
 
@@ -31,7 +31,7 @@ describe('error catching:', () => {
     describe('for the interpreter:', () => {
         it('should throw on malformed ASTs.', () => {
             const interpreter = new BNFyInterpreter(BNFyTable);
-            expect(() => interpreter.interpret({__name__: 'not_grammar'})).to.throw(Error, new RegExp(ErrorCode.MALFORMED_AST));
+            expect(() => interpreter.interpret({__node__: 'not_grammar'})).to.throw(Error, new RegExp(ErrorCode.MALFORMED_AST));
         });
         it('should throw on undefined non-terminals.', () => {
             let grammar = 'entry test ::= {unknown: x};';

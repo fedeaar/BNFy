@@ -11,7 +11,7 @@ import { Lexer } from './Lexer';
  */
 export interface ParserNode 
 {
-    __name__: string,
+    __node__: string,
     [value: string]: any
 }
 
@@ -58,6 +58,19 @@ export class BaseParser
 			this.__cToken__, 
 			`expected token type = ${expected}.`);
 		throw new Error(error.msg);
+	}
+
+	protected __try__(fn: () => ParserNode): ParserNode | null {
+		try {
+			return fn();
+		} catch(error) {
+			//@ts-expect-error: error must have unknown or any type ?
+			if (new RegExp(ErrorCode.UNEXPECTED_TOKEN).test(error.msg)) {
+				return null;
+			} else {
+				throw error;
+			}
+		}
 	}
 
 	/**

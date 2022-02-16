@@ -16,13 +16,13 @@ export class NodeVisitor
     } 
     
     /**
-     * anonymous caller for this.visit_{`node.__name__`}().
+     * anonymous caller for this.visit_{`node.__node__`}().
      * @param {ParserNode} node the node to visit.
      * @param {any[]} params extra parameters to pass. 
-     * @returns {any} this.visit_{`node.__name__`}()'s return value.
+     * @returns {any} this.visit_{`node.__node__`}()'s return value.
      */
     protected visit(node: ParserNode, ...params: any[]): any {
-        let method: string = 'visit_' + node.__name__;  
+        let method: string = 'visit_' + node.__node__;  
         if (method in this) {
             //@ts-ignore: anon class methods ;)
             return this[method](node, ...params);

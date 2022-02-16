@@ -29,7 +29,7 @@ export class BNFyParser extends BaseParser
     }
 
     private grammar(): ParserNode {
-        let node: ParserNode = {__name__: 'grammar'};
+        let node: ParserNode = {__node__: 'grammar'};
         node.statements = [];
         node.statements.push(this.statement());
         while (['SEMI'].includes(this.__cToken__.type)) {
@@ -41,7 +41,7 @@ export class BNFyParser extends BaseParser
     }
 
     private statement(): ParserNode {
-        let node: ParserNode = {__name__: 'statement'};
+        let node: ParserNode = {__node__: 'statement'};
         if (['id', 'MODIFIER'].includes(this.__cToken__.type)) {
             node = this.define_stmnt();
         } else {
@@ -51,12 +51,12 @@ export class BNFyParser extends BaseParser
     }
 
     private empty(): ParserNode {
-        let node: ParserNode = {__name__: 'empty'};
+        let node: ParserNode = {__node__: 'empty'};
         return node;
     }
 
     private define_stmnt(): ParserNode {
-        let node: ParserNode = {__name__: 'define_stmnt'};
+        let node: ParserNode = {__node__: 'define_stmnt'};
         node.modifiers = [];
         while (['MODIFIER'].includes(this.__cToken__.type)) {
             node.modifiers.push(this.__eat__(['MODIFIER']));
@@ -68,7 +68,7 @@ export class BNFyParser extends BaseParser
     }
 
     private definition(): ParserNode {
-        let node: ParserNode = {__name__: 'definition'};
+        let node: ParserNode = {__node__: 'definition'};
         node.lNode = this.compound();
         if (['OR'].includes(this.__cToken__.type)) {
             this.__eat__(['OR']);
@@ -81,7 +81,7 @@ export class BNFyParser extends BaseParser
     }
 
     private compound(): ParserNode {
-        let node: ParserNode = {__name__: 'compound'};
+        let node: ParserNode = {__node__: 'compound'};
         node.lNode = this.repetition();
         if (['AND'].includes(this.__cToken__.type)) {
             this.__eat__(['AND']);
@@ -93,7 +93,7 @@ export class BNFyParser extends BaseParser
     }
 
     private repetition(): ParserNode {
-        let node: ParserNode = { __name__: 'repetition' };
+        let node: ParserNode = { __node__: 'repetition' };
         node.lNode = this.concept();
         if (['REPEAT_0N', 'REPEAT_1N'].includes(this.__cToken__.type)) {
             node.operator = this.__eat__(['REPEAT_0N', 'REPEAT_1N']);
@@ -105,7 +105,7 @@ export class BNFyParser extends BaseParser
     }
 
     private concept(): ParserNode {
-        let node: ParserNode = {__name__: 'concept'};
+        let node: ParserNode = {__node__: 'concept'};
         if (['L_PAREN'].includes(this.__cToken__.type)) {
             this.__eat__(['L_PAREN']);
             node = this.definition();
@@ -121,7 +121,7 @@ export class BNFyParser extends BaseParser
     }
 
     private node_assign(): ParserNode {
-        let node: ParserNode = {__name__: 'node_assign'};
+        let node: ParserNode = {__node__: 'node_assign'};
         this.__eat__(['CASH']);
         node.assign_node = this.__eat__(['id']);
         this.__eat__(['EQUAL']);
@@ -131,7 +131,7 @@ export class BNFyParser extends BaseParser
     }
 
     private id_or_string(): ParserNode {
-        let node: ParserNode = {__name__: 'id_or_string'};
+        let node: ParserNode = {__node__: 'id_or_string'};
         if (['literal'].includes(this.__cToken__.type)) {
             node.token = this.__eat__(['literal']);
         } else {
@@ -141,7 +141,7 @@ export class BNFyParser extends BaseParser
     }
 
     private conditional(): ParserNode {
-        let node: ParserNode = {__name__: 'conditional'};
+        let node: ParserNode = {__node__: 'conditional'};
         node.cond = this.tokens();
         if (['IF'].includes(this.__cToken__.type)) {
             this.__eat__(['IF']);
@@ -157,7 +157,7 @@ export class BNFyParser extends BaseParser
     }
 
     private tokens(): ParserNode {
-        let node: ParserNode = {__name__: 'tokens'};
+        let node: ParserNode = {__node__: 'tokens'};
         if (['L_SQBRACKET'].includes(this.__cToken__.type)) {
             node = this.token_list();
         } else {
@@ -167,7 +167,7 @@ export class BNFyParser extends BaseParser
     }
 
     private token_id(): ParserNode {
-        let node: ParserNode = {__name__: 'token_id'};
+        let node: ParserNode = {__node__: 'token_id'};
         this.__eat__(['L_ANGLE']);
         if (['NOT'].includes(this.__cToken__.type)) {
             this.__eat__(['NOT']);
@@ -182,7 +182,7 @@ export class BNFyParser extends BaseParser
     }
 
     private token_list(): ParserNode {
-        let node: ParserNode = {__name__: 'token_list'};
+        let node: ParserNode = {__node__: 'token_list'};
         this.__eat__(['L_SQBRACKET']);
         if (['NOT'].includes(this.__cToken__.type)) {
             this.__eat__(['NOT']);
@@ -197,7 +197,7 @@ export class BNFyParser extends BaseParser
     }
 
     private token_chain(): ParserNode {
-        let node: ParserNode = {__name__: 'token_chain'};
+        let node: ParserNode = {__node__: 'token_chain'};
         node.tokens = [];
         node.tokens.push(this.token_id());
         while (['COMMA'].includes(this.__cToken__.type)) {
@@ -208,7 +208,7 @@ export class BNFyParser extends BaseParser
     }
 
     private control_id(): ParserNode {
-        let node: ParserNode = {__name__: 'control_id'};
+        let node: ParserNode = {__node__: 'control_id'};
         this.__eat__(['L_BRACKET']);
         node.token = this.__eat__(['id']);
         if (['COLON'].includes(this.__cToken__.type)) {
@@ -219,7 +219,7 @@ export class BNFyParser extends BaseParser
     }
 
     private property_assign(): ParserNode {
-        let node: ParserNode = {__name__: 'property_assign'};
+        let node: ParserNode = {__node__: 'property_assign'};
         this.__eat__(['COLON']);
         node.token = this.__eat__(['id']);
         if (['L_SQBRACKET'].includes(this.__cToken__.type)) {

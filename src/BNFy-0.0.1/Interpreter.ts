@@ -44,7 +44,7 @@ export class BNFyInterpreter extends NodeVisitor
      * @returns {ParserSchema} the schema for the interpreted parser.
      */
     public interpret(BNFyAST: ParserNode): ParserSchema {
-        if (BNFyAST.__name__ !== "grammar") this.error(ErrorCode.MALFORMED_AST);
+        if (BNFyAST.__node__ !== "grammar") this.error(ErrorCode.MALFORMED_AST);
         this.controlIdentifiers.clear();
         const InterpretedParserSchema = this.visit(BNFyAST);
         return InterpretedParserSchema;
@@ -81,7 +81,7 @@ export class BNFyInterpreter extends NodeVisitor
 
     protected visit_define_stmnt(node: ParserNode): string[] {
         const code = [    
-            `let node = {__name__: '${node.def_name}'};`,    
+            `let node = {__node__: '${node.def_name}'};`,    
             ...this.visit(node.definition),
             `return node;`
         ];
@@ -99,7 +99,7 @@ export class BNFyInterpreter extends NodeVisitor
                     this.visit(node.lNode),
                 '}'
             ];
-        const code = node.rNode.__name__ === 'definition' ?
+        const code = node.rNode.__node__ === 'definition' ?
             [
                 ...this.visit(node.rNode, node.cond),
                 ...andNode
@@ -172,16 +172,16 @@ export class BNFyInterpreter extends NodeVisitor
     protected visit_token_id(node: ParserNode, dont_eat=true, full_stmnt=true, init=false, push=true): string[] {
         this.test_token_id(node.token);
         let token_type = dont_eat && node.dont_eat ? '' : `['${node.token.value}']`;
-        let code = token_type;
+        let code = [token_type];
         if (full_stmnt) {
             if (token_type !== '') {
-                code = `this.__eat__(${token_type})`;
+                code = [`this.__eat__(${token_type})`];
                 if (node.property_name) {
-                    code = `${this.visit(node.property_name, code, init, push)}`;
-                } else code += ';';
+                    code = this.visit(node.property_name, code[0], init, push);
+                } else code[0] += ';';
             } 
         } 
-        return [code];
+        return code;
     }
     
     protected visit_token_list(node: ParserNode, dont_eat=true, full_stmnt=true, init=false, push=true): string[] {
@@ -189,16 +189,16 @@ export class BNFyInterpreter extends NodeVisitor
         if (token_list === '[]') {
             token_list = '';
         }
-        let code = '';
+        let code = [token_list];
         if (full_stmnt) {    
             if (token_list !== '') {
-                code = `this.__eat__(${token_list})`;
+                code = [`this.__eat__(${token_list})`];
                 if (node.property_name) {   
-                    code = `${this.visit(node.property_name, code, init, push)}`;
-                } else code += ';';
+                    code = this.visit(node.property_name, code[0], init, push);
+                } else code[0] += ';';
             }
-        } else code = token_list;
-        return [code];
+        } 
+        return code;
     }
     
     protected visit_token_chain(node: ParserNode, dont_eat=true): string[] {
