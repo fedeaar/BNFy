@@ -1,9 +1,10 @@
 // utils
 import { expect } from 'chai';
 // base
-import { GeneratedParser } from '../src/main';
+import { createParserSourceFile, GeneratedParser } from '../src/main';
+import { saveFile } from '../src/Utils';
 // test helpers
-import { CalcTable, CalcGrammar, CalcInterpreter } from './calculator.helper'
+import { CalcTable, CalcGrammar, CalcInterpreter } from './helpers/calculator.helper'
 
 
 describe('simple calculator parser:', () => {

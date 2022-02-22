@@ -21,7 +21,8 @@ export class NodeVisitor
      * @param {any[]} params extra parameters to pass. 
      * @returns {any} this.visit_{`node.__node__`}()'s return value.
      */
-    protected visit(node: ParserNode, ...params: any[]): any {
+    protected visit(node?: ParserNode, ...params: any[]): any {
+        if (!node) return;
         let method: string = 'visit_' + node.__node__;  
         if (method in this) {
             //@ts-ignore: anon class methods ;)

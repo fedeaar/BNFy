@@ -34,9 +34,8 @@ export class BNFyParser extends BaseParser {
 	private grammar(): ParserNode {
 		let node: ParserNode = {__node__: 'grammar'};
 		node.statements = [];
-		let maybe = null; 
-		while (maybe = this.__try__(() => this.statement())) {
-			node.statements.push(maybe);
+		while (this.__is__(() => this.statement())) {
+			node.statements.push(this.statement());
 			this.__eat__(['SEMI']);
 		}
 		this.__eat__(['__EOF__']);
@@ -45,10 +44,9 @@ export class BNFyParser extends BaseParser {
 
 	private statement(): ParserNode {
 		let node: ParserNode = {__node__: 'statement'};
-		let maybe = null;
-		if (maybe = this.__try__(() => this.declaration())) {
-			node = maybe;
-		} else {
+		if (this.__is__(() => this.declaration())) {
+			node = this.declaration();
+		} else { 
 			node = this.empty();
 		}
 		return node;
@@ -78,9 +76,7 @@ export class BNFyParser extends BaseParser {
 		if (['OR'].includes(this.__cToken__.type)) {
 			this.__eat__(['OR']);
 			node.rNode = this.syntax();
-		} 
-		// main modifier in property assign
-		if (Object.keys(node).length === 2) {
+		} else {
 			node = node.lNode;
 		}
 		return node;
@@ -90,9 +86,8 @@ export class BNFyParser extends BaseParser {
 		let node: ParserNode = {__node__: 'sequence'};
 		node.sequence = [];
 		node.sequence.push(this.repetition());
-		let maybe = null;
-		while (maybe = this.__try__(() => this.repetition())) {
-			node.sequence.push(maybe);
+		while (this.__is__(() => this.repetition())) {
+			node.sequence.push(this.repetition());
 		}
 		return node;
 	}
@@ -102,8 +97,7 @@ export class BNFyParser extends BaseParser {
 		node.repeats = this.conditional();
 		if (['REPEAT_01', 'REPEAT_0N', 'REPEAT_1N'].includes(this.__cToken__.type)) {
 			node.operator = this.__eat__(['REPEAT_01', 'REPEAT_0N', 'REPEAT_1N']);
-		}
-		if (Object.keys(node).length === 2) {
+		} else {
 			node = node.repeats;
 		}
 		return node;
@@ -119,8 +113,7 @@ export class BNFyParser extends BaseParser {
 				this.__eat__(['COLON']);
 				node.else = this.syntax();
 			}
-		} 
-		if (Object.keys(node).length === 2) {
+		} else {
 			node = node.condition;
 		}
 		return node;
@@ -128,14 +121,12 @@ export class BNFyParser extends BaseParser {
 
 	private identity(): ParserNode {
 		let node: ParserNode = {__node__: 'identity'};
-		//ojo
-		let maybe = null;
 		if (['L_PAREN'].includes(this.__cToken__.type)) {
 			this.__eat__(['L_PAREN']);
 			node = this.syntax();
 			this.__eat__(['R_PAREN']);
-		} else if (maybe = this.__try__(() => this.non_terminal())) {
-			node = maybe;
+		} else if (this.__is__(() => this.non_terminal())) {
+			node = this.non_terminal();
 		} else {
 			node = this.terminal();
 		}
@@ -154,9 +145,8 @@ export class BNFyParser extends BaseParser {
 			this.__eat__(['COMMA']);
 			node.tokens.push(this.__eat__(['alpha']));
 		}
-		let maybe = null;
-		if (maybe = this.__try__(() => this.property_assign())) {
-			node.property_name = maybe;
+		if (this.__is__(() => this.property_assign())) {
+			node.assigns = this.property_assign();
 		}
 		this.__eat__(['R_ANGLE']);
 		return node;
@@ -165,10 +155,13 @@ export class BNFyParser extends BaseParser {
 	private non_terminal(): ParserNode {
 		let node: ParserNode = {__node__: 'non_terminal'};
 		this.__eat__(['L_BRACKET']);
+		node.modifiers = [];
+		while (['NT_MODIFIER'].includes(this.__cToken__.type)) {
+			node.modifiers.push(this.__eat__(['NT_MODIFIER']));
+		}
 		node.token = this.__eat__(['alpha']);
-		let maybe = null;
-		if (maybe = this.__try__(() => this.property_assign())) {
-			node.property_name = maybe;
+		if (this.__is__(() => this.property_assign())) {
+			node.assigns = this.property_assign();
 		}
 		this.__eat__(['R_BRACKET']);
 		return node;
@@ -177,11 +170,8 @@ export class BNFyParser extends BaseParser {
 	private property_assign(): ParserNode {
 		let node: ParserNode = {__node__: 'property_assign'};
 		this.__eat__(['COLON']);
-		node.modifiers = [];
-		while (['P_MODIFIER'].includes(this.__cToken__.type)) {
-			node.modifiers.push(this.__eat__(['P_MODIFIER']));
-		}
 		node.name = this.__eat__(['alpha']);
+		node.modifiers = [];
 		if (['L_SQBRACKET'].includes(this.__cToken__.type)) {
 			node.modifiers.push(this.__eat__(['L_SQBRACKET']));
 			this.__eat__(['R_SQBRACKET']);

@@ -1,7 +1,7 @@
 import { readFileSync, writeFile } from "fs";
 
 export function cleanStr(str : string) {
-    return str.replace(/[#-}]/g, '\\$&');
+    return str.replace(/\W|_/g, '\\$&');
 }
 
 export function replaceAll(str: string, searchValue: string, replaceValue: string): string {
@@ -20,7 +20,7 @@ export function isKeySubstring(test: string, obj: Object): boolean {
 	return res;
 }	
 
-export type NestedArray<T> = T[] | NestedArray<T>[]
+export type NestedArray<T> = (T | NestedArray<T>)[]
 export function formatNestedString(str: NestedArray<string>, indent: number = 0) {
 	let plainStr = "";
 	for (let nest of str) {

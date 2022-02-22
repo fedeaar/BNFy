@@ -6,9 +6,9 @@ import { Lexer } from "./base/Lexer";
 import { TokenTable } from "./base/Token";
 import { BaseParser, ParserNode } from "./base/Parser";
 
-import { BNFyParser } from "./BNFy-0.0.1/Parser";
-import { BNFyInterpreter, ParserSchema } from "./BNFy-0.0.1/Interpreter";
-import { BNFyTable } from "./BNFy-0.0.1/grammar";
+import { BNFyParser } from "./BNFy-0.0.2/Parser";
+import { BNFyInterpreter, ParserSchema } from "./BNFy-0.0.2/Interpreter";
+import { BNFyTable } from "./BNFy-0.0.2/grammar";
 
 
 export class GeneratedParser extends BaseParser 

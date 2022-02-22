@@ -34,7 +34,7 @@ export const BNFyTable: TokenTable = {
     compoundTypes: {
         alpha: {
             D_MODIFIER: 'entry',
-            P_MODIFIER: 'main'
+            NT_MODIFIER: 'main'
         },
         number: {},
         operator: {
@@ -82,21 +82,21 @@ declaration ::=
     <D_MODIFIER: modifiers[]>* 
     <alpha: name> 
     <ASSIGN>
-    {syntax: definition} ;
+    {syntax: syntax} ;
 
 syntax ::= 
-    {sequence: main lNode} 
-    (<OR> {syntax: rNode})^ ;
+    {main sequence: lNode} 
+    (<OR> {syntax: rNode})^ ; 
 
 sequence ::= 
-    {repetition: main sequence[]}+ ;
+    {repetition: sequence[]}+ ;
 
 repetition ::= 
-    {conditional: main repeats} 
+    {main conditional: repeats} 
     <REPEAT_01, REPEAT_0N, REPEAT_1N: operator>^ ;
 
 conditional ::= 
-    {identity: main condition} 
+    {main identity: condition} 
     (<IF> {syntax: then} 
         (<COLON> {syntax: else})^ 
     )^ ;
@@ -108,18 +108,18 @@ terminal ::=
     <L_ANGLE> 
     <NOT: dont_eat>^ 
     <alpha: tokens[]> (<COMMA> <alpha: tokens[]>)* 
-    {property_assign: property_name}^ 
+    {property_assign: assigns}^ 
     <R_ANGLE> ; 
 
 non_terminal ::= 
     <L_BRACKET> 
+    <NT_MODIFIER: modifiers[]>^
     <alpha: token> 
-    {property_assign: property_name}^ 
+    {property_assign: assigns}^ 
     <R_BRACKET> ;
 
 property_assign ::= 
     <COLON> 
-    <P_MODIFIER: modifiers[]>* 
     <alpha: name>
     (<L_SQBRACKET: modifiers[]> <R_SQBRACKET>)^ ;
 `;

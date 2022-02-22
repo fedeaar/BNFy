@@ -47,7 +47,7 @@ export class baseError
 		const details = this.details ? 
 			`\n\t${this.details}` : 
 			'';
-		return `\t${this.constructor.name} - ${this.errorcode}.${info}${value}${pos}${details}`;
+		return `\t${this.constructor.name} - ${this.errorcode}${info}${value}${pos}${details}`;
 	}
 }
 
@@ -61,14 +61,15 @@ export class IllegalCharError extends baseError
 	 * @param {ErrorCode} errorcode the error type.
 	 * @param {position} position where the error ocurred.
 	 */
-	constructor (errorcode: ErrorCode, position: position) {
+	constructor (errorcode: ErrorCode, position: position, details?: string) {
 		super(errorcode);
 		this.position = position;
+		this.details = details;
 	}
 
 	/** constructs the error msg to display. */
 	public get msg() : string {
-		return `${this.constructor.name}: ${this.errorcode}\n\tposition = [Line: ${this.position[1]}, Col: ${this.position[2]}]`;
+		return `${this.constructor.name}: ${this.errorcode}\n\tposition = [Line: ${this.position[1]}, Col: ${this.position[2]}]: ${this.details}`;
 	}
 }
 

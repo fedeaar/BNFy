@@ -22,6 +22,7 @@ export class BaseParser
 	protected __cToken__: Token; 
 	//@ts-expect-error: no explicit declaration of __nToken__.
 	protected __nToken__: Token; 
+	protected __raise_on_success__ = 0;
 
 	/**
 	 * a base class for Parser objects.
@@ -48,23 +49,29 @@ export class BaseParser
 		const eatString = typeof tokenType === 'string';
 		if ((eatString && this.__cToken__.type === tokenType) || 
 			(!eatString && tokenType.includes(this.__cToken__.type))) {
+				if (this.__raise_on_success__ > 0) {
+					throw new Error("expected token found.");
+				}
 			return
 		}
 		else this.__error__(tokenType);
 	}
 
-	protected __try__(fn: () => ParserNode): ParserNode | null {
-		let to_catch = true;
-		// will catch only the first 'wrong-way' error
+	protected __is__(fn: () => ParserNode): boolean {
+		// a (pretty much illegal) exception driven control flow wrapper(?).
+		// it detects whether the fn syntax would work or fail.
 		try {
-			const res = fn();
-			return res;
-		} catch(error) {
-			if (to_catch) {
-				to_catch = false;
-				return null;
+			++this.__raise_on_success__;
+			fn();
+			// should never happen.
+			--this.__raise_on_success__;
+			return true;
+		} catch(error: any) {
+			--this.__raise_on_success__;
+			if (new RegExp("expected token found.").test(error)) {
+				return true;
 			} else {
-				throw error;
+				return false;
 			}
 		}
 	}

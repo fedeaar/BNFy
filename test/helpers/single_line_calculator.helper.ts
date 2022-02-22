@@ -1,6 +1,6 @@
-import { NodeVisitor } from '../src/base/Interpreter';
-import { ParserNode } from '../src/base/Parser';
-import { TokenTable } from '../src/base/Token'
+import { NodeVisitor } from '../../src/base/Interpreter';
+import { ParserNode } from '../../src/base/Parser';
+import { Token, TokenTable } from '../../src/base/Token'
 
 
 export const CalcTable : TokenTable = {
@@ -54,33 +54,20 @@ export const CalcTable : TokenTable = {
 
 
 export const CalcGrammar = `
-               
     entry expression ::=        
-        {term: lNode} 
-        & [<PLUS>, <MINUS>: operator] ? 
-            {expression: rNode}
-        -> 
-            $ __node__ = lNode $;
-        
-    term ::=
-        {factor: lNode} 
-        & [<TIMES>, <REAL_DIV>: operator] ?
-            {term: rNode}
-        ->
-            $ __node__ = lNode $;
-
-    factor  ::= 
-        {constant: constant}
-        |<!id> {function: factor}
-        |<MINUS: operator> {factor: factor}
-        |<ABSOLUTE: operator> {expression: factor} & <ABSOLUTE>
-        |<L_PAREN> {expression: factor} & <R_PAREN>;
-
-    constant ::= 
-        [<INTEGER_CONST>, <REAL_CONST>, <PI>: token];
-
-    function ::=
-        <id: name> & <L_PAREN> & ({expression: parameters[]} + <COMMA>) & <R_PAREN>;
+        {main term: lNode} (<PLUS, MINUS: operator> {expression: rNode})^ ;
+    
+    // please don't do this
+    term ::= 
+        <MINUS: factor_min_operator>^ (
+            <INTEGER_CONST, REAL_CONST, PI: factor_constant>
+            |   <id: factor_fn_name> <L_PAREN> (
+                    {expression: factor_fn_params[]} (<COMMA> {expression: factor_fn_params[]})*
+                )^ <R_PAREN>
+            |   <ABSOLUTE: factor_abs_operator> {expression: factor} <ABSOLUTE>
+            |   <L_PAREN> {expression: factor} <R_PAREN>
+        ) 
+        (<TIMES, REAL_DIV: term_operator> {term: rNode})^;
 `;
 
 
@@ -103,70 +90,75 @@ export class CalcInterpreter extends NodeVisitor {
     }
 
     visit_term(node: ParserNode): number {
-        const a  = this.visit(node.lNode);
-        const b = this.visit(node.rNode);
-        let ans = NaN;
-        switch (node.operator.type) {
-        case 'TIMES':
-            ans = a * b;
-            break;
-        case 'REAL_DIV':
-            ans = a / b;
-            break; 
-        }
-        return ans;
-    }
-
-    visit_factor(node: ParserNode): number {
-        let ans = NaN;
-        if (node.constant) {
-            ans = this.visit(node.constant);
-        }
-        else if (node.factor) {
-            ans = this.visit(node.factor);
-        }
-        if (node.operator) {
-            switch (node.operator.type) {
-            case 'MINUS':
-                ans = -ans;
+        const a  = this.eval_factor(node);
+        let ans = a;
+        if (node.rNode) {
+            const b = this.visit(node.rNode);
+            switch (node.term_operator.type) {
+            case 'TIMES':
+                ans = a * b;
                 break;
-            case 'ABSOLUTE':
-                ans = Math.abs(ans);
+            case 'REAL_DIV':
+                ans = a / b;
+                break; 
             }
         }
         return ans;
     }
 
-    visit_constant(node: ParserNode): number {
-        let ans = node.token.value;
-        switch (node.token.type) {
-        case 'INTEGER_CONST':
-            ans = parseInt(ans);
-            break;
-        case 'REAL_CONST':
-            ans = parseFloat(ans);
-            break;
-        case 'PI':
-            ans = Math.PI;
-            break;
-        default:
-            const msg = `Semantics Error - no constant of type ${node.token.type} defined.`
-            throw new Error(msg);   
+    eval_factor(node: ParserNode): number {
+        let ans = NaN;
+        if (node.factor_constant) {
+            ans = this.eval_constant(node.factor_constant);
+         }
+        else if (node.factor_fn_name) {
+            ans = this.eval_fn(node);
+        }
+        if (node.factor) {
+            ans = this.visit(node.factor);
+        }
+        if (node.factor_abs_operator) {
+            ans = Math.abs(ans)
+        }
+        if (node.factor_min_operator) {
+            ans = -ans;
         }
         return ans;
     }
 
-    visit_function(node: ParserNode): number {
+    eval_constant(token: Token): number {
+        let ans = NaN;
+        let val = token.value;
+        if (val) {
+            switch (token.type) {
+            case 'INTEGER_CONST':
+                ans = parseInt(val);
+                break;
+            case 'REAL_CONST':
+                ans = parseFloat(val);
+                break;
+            case 'PI':
+                ans = Math.PI;
+                break;
+            default:
+                const msg = `Semantics Error - no constant of type ${token.type} defined.`
+                throw new Error(msg);   
+            }
+        }
+        return ans;
+    }
+
+    eval_fn(node: ParserNode): number {
         let ans = NaN;
         const paramError = (n: number) => {
             const msg = 'syntax error, function called with wrong amount of parameters.';
-            if (node.parameters.length !== n) throw new Error(msg);
+            if (node.factor_fn_params.length !== n) throw new Error(msg);
         }
         const options = [];
-        for (const parameter of node.parameters) {
+        for (const parameter of node.factor_fn_params) {
             options.push(this.visit(parameter));
         }
-        switch (node.name.value) {
+        switch (node.factor_fn_name.value) {
         case 'sin':
             paramError(1);
             ans = Math.sin(options[0]);

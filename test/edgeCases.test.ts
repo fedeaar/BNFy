@@ -4,23 +4,13 @@ import { expect } from 'chai';
 import { createParserSourceFile, createSourceFile, GeneratedParser, GeneratedParserFromSchema } from '../src/main';
 import { BNFyTable, BNFyGrammar } from '../src/BNFy-0.0.2/grammar';
 import { BNFyInterpreter } from '../src/BNFy-0.0.2/Interpreter';
-import { CalcTable, CalcGrammar, CalcInterpreter } from './helpers/calculator.helper'
 import { saveFile } from '../src/Utils';
+import { BNFyParser } from '../src/BNFy-0.0.2/Parser';
+import { TokenTable } from '../src/base/Token';
+import { CalcGrammar, CalcInterpreter, CalcTable } from './helpers/single_line_calculator.helper';
 
-describe('generate self:', () => {
-    
-    const parser = new GeneratedParser(BNFyGrammar, BNFyTable); 
-    const parserSource = createParserSourceFile(parser.__schema__);
-    
-    it('check if the BNFParser can generate itself from its own grammar.', () => {
-        const reiterationAST = parser.parse(BNFyGrammar);
-        const reiterationInterpreter = new BNFyInterpreter(BNFyTable);
-        const reiterationParserSource = createParserSourceFile(reiterationInterpreter.interpret(reiterationAST));
-       
-        expect(parserSource).is.equal(reiterationParserSource);
-    });
-
-    describe('check if the auto generation can parse the calculator grammar.', () => {
+describe('check strange structures are properly parsed:', () => {
+    describe('check if an almost single-line calculator grammar is properly parsed.', () => {
         const parser = new GeneratedParser(BNFyGrammar, BNFyTable);
         const ast = parser.parse(CalcGrammar);
         const schema = new BNFyInterpreter(CalcTable).interpret(ast);

@@ -2,9 +2,9 @@
 import { expect } from 'chai';
 // base
 import { GeneratedParser } from '../src/main';
-import { BNFyTable, BNFyGrammar } from '../src/BNFy-0.0.1/grammar';
-import { BNFyInterpreter } from '../src/BNFy-0.0.1/Interpreter';
-import { BNFyParser } from '../src/BNFy-0.0.1/Parser';
+import { BNFyTable, BNFyGrammar } from '../src/BNFy-0.0.2/grammar';
+import { BNFyInterpreter } from '../src/BNFy-0.0.2/Interpreter';
+import { BNFyParser } from '../src/BNFy-0.0.2/Parser';
 import { ErrorCode } from '../src/base/Errors';
 
 
@@ -16,14 +16,14 @@ describe('error catching:', () => {
             expect(() =>new BNFyParser(BNFyTable).parse(grammar)).to.throw(Error, new RegExp(ErrorCode.ILLEGAL_CHAR));
         });
         it('should throw on unknown tokens.', () => {
-            let grammar = 'entry test :::= <id>;'
+            let grammar = 'entry test :::= <alpha>;'
             expect(() =>new BNFyParser(BNFyTable).parse(grammar)).to.throw(Error, new RegExp(ErrorCode.TOKEN_ERROR));
         })
     });
 
     describe('for the parser:', () => {
         it('should throw on unexpected tokens.', () => {
-            let grammar = 'entry test ::= <id> <unexpected>;'
+            let grammar = 'entry test ::= ;'
             expect(() => new BNFyParser(BNFyTable).parse(grammar)).to.throw(Error, new RegExp(ErrorCode.UNEXPECTED_TOKEN));
         });
     });
@@ -42,11 +42,11 @@ describe('error catching:', () => {
             expect(() => new GeneratedParser(grammar, BNFyTable)).to.throw(Error, new RegExp(ErrorCode.ID_NOT_FOUND));
         });
         it('should throw on repeated entry modifier.', () => {
-            let grammar = 'entry test ::= <id>; entry nope ::= <id>;';
+            let grammar = 'entry test ::= <alpha>; entry nope ::= <alpha>;';
             expect(() => new GeneratedParser(grammar, BNFyTable)).to.throw(Error, new RegExp(ErrorCode.DUPLICATE_ID));
         });
         it('should throw on no entry modifier.', () => {
-            let grammar = 'test ::= <id>;';
+            let grammar = 'test ::= <alpha>;';
             expect(() => new GeneratedParser(grammar, BNFyTable)).to.throw(Error, new RegExp(ErrorCode.NO_ENTRYPOINT));
         });
     });

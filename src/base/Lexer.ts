@@ -121,11 +121,11 @@ export class Lexer
 		let error = null;
 		switch (type) {
 		case ErrorCode.TOKEN_ERROR:
-			error = new TokenError(type, position);
+			error = new TokenError(type, position, this.source[position[0]]);
 			break;
 		case ErrorCode.ILLEGAL_CHAR:
 		default:
-			error = new IllegalCharError(type, position);
+			error = new IllegalCharError(type, position, this.source[position[0]]);
 			break;
 		}
 		throw new Error(error?.msg); 
