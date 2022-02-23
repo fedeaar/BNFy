@@ -2,9 +2,9 @@
 import { expect } from 'chai';
 // base
 import { GeneratedParser } from '../src/main';
-import { BNFyTable, BNFyGrammar } from '../src/BNFy-0.0.2/grammar';
-import { BNFyInterpreter } from '../src/BNFy-0.0.2/Interpreter';
-import { BNFyParser } from '../src/BNFy-0.0.2/Parser';
+import { BNFyTable, BNFyGrammar } from '../src/BNFy/grammar';
+import { BNFyInterpreter } from '../src/BNFy/Interpreter';
+import { BNFyParser } from '../src/BNFy/Parser';
 import { ErrorCode } from '../src/base/Errors';
 
 
