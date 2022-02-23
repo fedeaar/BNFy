@@ -131,7 +131,10 @@ export class DeclTable extends NodeVisitor {
         if (!this.mainAssignment) {
             this.mainAssignment = name;
         } else {
-            const error = new SemanticsError(ErrorCode.DUPLICATE_ID, token, "main declared twice in the same syntax.");
+            const error = new SemanticsError(
+                ErrorCode.DUPLICATE_ID, 
+                token, 
+                "'main' declared twice for the same syntax.");
             throw new Error(error.msg);
         }
     }

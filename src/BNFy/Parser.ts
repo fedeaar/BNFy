@@ -8,13 +8,13 @@ export interface ParserNode
     [value: string]: any
 }
 
-export class BNFyParser extends BaseParser {
-
+export class BNFyParser extends BaseParser 
+{
 	protected __table__: TokenTable;
 
 	/**
      * BNFyParser parses the BNFy grammar.
-     * @param {TokenTable} table the underlying token table for the parser.
+     * @param table the underlying token table for the parser.
      */
 	constructor(table: TokenTable) {
 		super();
@@ -23,7 +23,7 @@ export class BNFyParser extends BaseParser {
 
 	/**
      * parses a source string.
-     * @returns {ParserNode} an abstract syntax tree.
+     * @returns an abstract syntax tree.
      */
 	public parse(source: string): ParserNode {
 		const lexer = new Lexer(source, this.__table__);

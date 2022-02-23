@@ -191,35 +191,7 @@ export class BNFyInterpreter extends NodeVisitor
     }
 
     protected parse_fnot(node: ParserNode): string {  
-        // first non-optional token.
         return new FnotVisitor(node).interpret();
-        // let fnot = "";
-        // switch (node.__node__) {
-        // case "syntax":
-        //     fnot = this.parse_fnot(node.lNode) + " || " + this.parse_fnot(node.rNode);
-        //     break;
-        // case "sequence":
-        //     fnot = this.parse_fnot(node.sequence[0]);
-        //     break;
-        // case "repetition":
-        //     fnot = this.parse_fnot(node.repeats);
-        //     break;
-        // case "conditional":
-        //     fnot = this.parse_fnot(node.condition);
-        //     break;
-        // case "identity":
-        //     fnot = this.parse_fnot(node.self);
-        //     break;
-        // case "terminal":
-        //     fnot = `${this.visit(node, "id")}.includes(this.__cToken__.type)`
-        //     break;
-        // case "non_terminal":
-        //     fnot = `this.__is__(() => ${this.visit(node, "id")})`
-        //     break;
-        // default:
-        //     break;
-        // }
-        // return fnot;
     }
 
     /* eval methods */ 

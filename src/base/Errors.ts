@@ -5,7 +5,8 @@ import { Token } from './Token';
 
 
 /** the defined errors */
-export enum ErrorCode {
+export enum ErrorCode 
+{
 	ILLEGAL_CHAR     = "invalid character.",
 	UNEXPECTED_TOKEN = "unexpected token.", 
 	TOKEN_ERROR      = "unknown or illegal token.",
@@ -23,9 +24,9 @@ export class baseError
 
 	/**
 	 * base error class for the Lexing - Parsing - Interpeting process.
-	 * @param {ErrorCode?} errorcode the error type.
-	 * @param {Token?} token the token where the error ocurred.
-	 * @param {string?} details extra logging information.
+	 * @param errorcode the error type.
+	 * @param token the token where the error ocurred.
+	 * @param details extra logging information.
 	 */
 	constructor (errorcode?: ErrorCode, token?: Token, details?: string) {
 		this.errorcode = errorcode;
@@ -33,20 +34,12 @@ export class baseError
 		this.details = details
 	}
 	
-	/** constructs the error msg to display. */
+	/** the error msg to display. */
 	public get msg(): string {
-		const info = this.token ? 
-			`\n\ttoken type = ${this.token.type}` : 
-			'';
-		const value = this.token?.value ? 
-			`\n\tvalue = '${this.token.value}'` : 
-			'';
-		const pos = this.token?.start ? 
-			`\n\tposition = [Line: ${this.token.start[1]}, Col: ${this.token.start[2]}]` : 
-			'';
-		const details = this.details ? 
-			`\n\t${this.details}` : 
-			'';
+		const info = this.token ? `\n\ttoken type = ${this.token.type}` : "";
+		const value = this.token?.value ? `\n\tvalue = '${this.token.value}'` : "";
+		const pos = this.token?.start ? `\n\tposition = [Line: ${this.token.start[1]}, Col: ${this.token.start[2]}]` : "";
+		const details = this.details ? `\n\t${this.details}` : "";
 		return `\t${this.constructor.name} - ${this.errorcode}${info}${value}${pos}${details}`;
 	}
 }
@@ -58,8 +51,8 @@ export class IllegalCharError extends baseError
 
 	/**
 	 * illegal character error class for the Lexing process.
-	 * @param {ErrorCode} errorcode the error type.
-	 * @param {position} position where the error ocurred.
+	 * @param errorcode the error type.
+	 * @param position where the error ocurred.
 	 */
 	constructor (errorcode: ErrorCode, position: position, details?: string) {
 		super(errorcode);
@@ -67,16 +60,13 @@ export class IllegalCharError extends baseError
 		this.details = details;
 	}
 
-	/** constructs the error msg to display. */
+	/** the error msg to display. */
 	public get msg() : string {
-		return `${this.constructor.name}: ${this.errorcode}\n\tposition = [Line: ${this.position[1]}, Col: ${this.position[2]}]: ${this.details}`;
+		const position = `\n\tposition = [Line: ${this.position[1]}, Col: ${this.position[2]}].`;
+		return `${this.constructor.name}: ${this.errorcode}${position}\n\t${this.details}`;
 	}
 }
 
 export class TokenError extends IllegalCharError {}
-
-
 export class SyntaxError extends baseError {}
-
-
 export class SemanticsError extends baseError {}

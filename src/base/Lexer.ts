@@ -18,8 +18,8 @@ export class Lexer
 
     /**
      * Handles the identification of tokens in a source string. 
-     * @param {string} source a string to parse.
-     * @param {TokenTable} table the possible tokens and allowed character terminals.
+     * @param source a string to parse.
+     * @param table a TokenTable instance with the possible tokens and allowed character terminals.
      */
 	constructor (source: string, table: TokenTable) {
 		this.source = source;
@@ -30,7 +30,7 @@ export class Lexer
 
     /**
      * advances the current character.
-     * @param {number} n how many characters to advance.
+     * @param n how many characters to advance.
      */
 	protected advance(n: number = 1): void {
 		while (n-- > 0) {
@@ -46,8 +46,8 @@ export class Lexer
 	
     /**
      * peeks into the source file. 
-     * @param {mumber} n the amount of characters to peek at.
-     * @returns {string} a substring of the source, from the current character to n (exclusive).
+     * @param n the amount of characters to peek at.
+     * @returns a substring of the source, from the current character to n (exclusive).
      */
 	protected peek(n: number = 1): string {
 		const pos = this.position.index;
@@ -55,15 +55,14 @@ export class Lexer
 		return peeked;
 	}
 
-    /**
-     * tries to find the next valid token in the source string.
-     * @returns {Token} the next token.
-     */
+    /** tries to find the next valid token in the source string. */
     public nextToken(): Token {
 		while (this.currentChar) {
-			if (this.peek(this.table.specialTypes.COMMENT_START.length) === this.table.specialTypes.COMMENT_START) {
+			if (this.peek(this.table.specialTypes.COMMENT_START.length) 
+                === this.table.specialTypes.COMMENT_START) {
 				this.skipComment(this.table.specialTypes.COMMENT_END);
-			} else if (this.peek(this.table.specialTypes.COMMENT_INLINE?.length) === this.table.specialTypes.COMMENT_INLINE) {
+			} else if (this.peek(this.table.specialTypes.COMMENT_INLINE?.length) 
+                === this.table.specialTypes.COMMENT_INLINE) {
 				this.skipComment('\n');
 			} else {
 				const builder = this.builder.getBuilder(this.currentChar);
@@ -73,7 +72,9 @@ export class Lexer
 					} else {
 						return this.buildToken(builder);
 					}
-				} else this.error(ErrorCode.ILLEGAL_CHAR, this.position.position);		
+				} else {
+                    this.error(ErrorCode.ILLEGAL_CHAR, this.position.position);	
+                }	
 			}	
 		}
 		return new Token(this.table.reservedTypes.__EOF__, this.position.position);
@@ -81,18 +82,19 @@ export class Lexer
 
     /**
      * builds and asserts the validity of the next token.
-     * @param {TokenBuilder} generator the building rules for the expected token type.
+     * @param generator the building rules for the expected token type.
      * @returns the built Token
      */
 	protected buildToken(generator: TokenBuilder): Token {
-		let value = '';
+		let value = "";
 		const start = this.position.position;
 		while (this.currentChar) {
 			if (generator.include(this.currentChar, value)) {
 				value += this.currentChar;
 				this.advance();
-			}
-			else break; 
+			} else {
+                break; 
+            } 
 		} 
 		if (generator.raise(value)) {
 			this.error(ErrorCode.TOKEN_ERROR, start);
@@ -102,20 +104,22 @@ export class Lexer
 
     /**
      * handles comment skipping.
-     * @param {string} endif the skipping end condition.
+     * @param endif the end condition.
      */
 	protected skipComment(endif: string): void {
 		while (this.currentChar && 
 			this.peek(endif.length) !== endif) {
 			this.advance();
 		}
-		if (this.currentChar) this.advance(endif.length);
+		if (this.currentChar) {
+            this.advance(endif.length);
+        }
 	}
 
     /**
      * handles error throwing. 
-     * @param {ErrorCode} type the type for the error. 
-     * @param {position} position where it ocurred. 
+     * @param type the type for the error. 
+     * @param position where it ocurred. 
      */
 	protected error(type: ErrorCode, position: position): void {
 		let error = null;
@@ -124,7 +128,6 @@ export class Lexer
 			error = new TokenError(type, position, this.source[position[0]]);
 			break;
 		case ErrorCode.ILLEGAL_CHAR:
-		default:
 			error = new IllegalCharError(type, position, this.source[position[0]]);
 			break;
 		}
@@ -133,13 +136,19 @@ export class Lexer
 }
 
 
+interface TokenBuilder 
+{
+    include: (currentChar: string, currentValue: string) => boolean;
+    return: (value: string, start: position) => Token;  
+    raise: (formedValue: string) => boolean;
+}
 class TokenBuilderCtx 
 {
-    protected table : TokenTable; 
+    protected table: TokenTable; 
     protected compoundMap: CompoundMap;
 
     /**
-     * TokenBuilderCtx handles assigning the correct building rules for Lexer.buildToken().
+     * TokenBuilderCtx handles the building rules for the Lexer's buildToken() method.
      * @param table the possible tokens and allowed character terminals.
      */
     constructor (table: TokenTable) {
@@ -148,10 +157,9 @@ class TokenBuilderCtx
     }
 
     /**
-     * assings a builder based on the current character being processed by the lexer. 
-     * @param {string} currentChar the last read character.
-     * @returns {TokenBuilder | "skip" | null} the builder, a "skip" command or a null 
-     * value on failure to assign.
+     * assings a builder based on the current character being processed. 
+     * @param currentChar the last read character.
+     * @returns the builder, a "skip" command or a null value on failure to assign.
      */
     public getBuilder(currentChar: string): TokenBuilder | "skip" | null {
         let builder = null;
@@ -168,16 +176,15 @@ class TokenBuilderCtx
         } else if (this.table.terminals.literal.includes(currentChar)) {
             builder = this.literalTokenBuilder();
         }
-        //@ts-ignore: "skip" interpreted as string.
+        //@ts-expect-error: "skip" interpreted as string.
         return builder;
     }
 
-    /**
-     * @returns the build rules for a number token. 
-     */
+    /** the build rules for a number token. */
     protected numberTokenBuilder(): TokenBuilder { 
         const includeFn = (currentChar: string) : boolean => { 
-            return this.table.terminals.number.includes(currentChar) || currentChar === '.'; 
+            return this.table.terminals.number.includes(currentChar) || 
+                currentChar === '.'; 
         };
         const returnFn = (value: string, start: position): Token => {
             let type = null;
@@ -205,9 +212,7 @@ class TokenBuilderCtx
         return builder;
     }
 
-    /**
-     * @returns the builder rules for a word token. 
-     */
+    /** the builder rules for an alpha / word token. */
     protected wordTokenBuilder() : TokenBuilder {
         const includeFn = (currentChar: string): boolean => { 
             return (this.table.terminals.alpha.includes(currentChar) ||
@@ -231,9 +236,7 @@ class TokenBuilderCtx
         return builder;
     }
 
-    /**
-     * @returns the builder rules for an operator token. 
-     */
+    /** the builder rules for an operator token. */
     private operatorTokenBuilder() : TokenBuilder {
         const includeFn = (currentChar: string, currentValue: string): boolean => { 
             let include = false;
@@ -257,9 +260,7 @@ class TokenBuilderCtx
         return builder;
     }   
 
-    /**
-     * @returns the builder rules for a delimiter token. 
-     */
+    /** the builder rules for a delimiter token. */
     private delimiterTokenBuilder() : TokenBuilder { 
         const includeFn = (currentChar: string, currentValue: string): boolean => { 
             return isKeySubstring(currentValue + currentChar, this.compoundMap.delimiter);
@@ -277,9 +278,7 @@ class TokenBuilderCtx
         return builder;
     }
 
-    /**
-     * @returns the builder rules for a string literal token. 
-     */
+    /** the builder rules for a string literal token. */
     private literalTokenBuilder() : TokenBuilder {
         const includeFn = (currentChar: string, currentValue: string): boolean => { 
             let include = true; 
@@ -313,7 +312,7 @@ function  createCompoundMap(compoundTypes: TokenTable["compoundTypes"]): Compoun
     const compoundMap: any = {};
     for (const baseType in compoundTypes) {
         compoundMap[baseType] = {};
-        //@ts-ignore: baseType interpreted as string.
+        //@ts-expect-error: baseType interpreted as string.
         const baseTypeCompounds = compoundTypes[baseType];
         for (const type in baseTypeCompounds) {
             const value = baseTypeCompounds[type];
@@ -327,11 +326,4 @@ function  createCompoundMap(compoundTypes: TokenTable["compoundTypes"]): Compoun
         }
     }
     return compoundMap as CompoundMap;
-}
-
-interface TokenBuilder 
-{
-    include: (currentChar: string, currentValue: string) => boolean;
-    return: (value: string, start: position) => Token;  
-    raise: (formedValue: string) => boolean;
 }

@@ -1,4 +1,4 @@
-// grammar.ts declares the grammar and TokenTable for the BNFyParser.
+// ./BNFy/grammar.ts declares the grammar and TokenTable of the BNFyParser.
 
 import { TokenTable } from '../base/Token'
 

@@ -1,11 +1,9 @@
 // main.ts declares the GeneratedParser class and related functions. 
 
 import { replaceAll } from "./Utils";
-
 import { Lexer } from "./base/Lexer";
 import { TokenTable } from "./base/Token";
 import { BaseParser, ParserNode } from "./base/Parser";
-
 import { BNFyParser } from "./BNFy/Parser";
 import { BNFyInterpreter, ParserSchema } from "./BNFy/Interpreter";
 import { BNFyTable } from "./BNFy/grammar";
@@ -73,8 +71,8 @@ export class GeneratedParserFromSchema extends BaseParser
 
 /**
  * creates a base parser source file from a schema.
- * @param {ParserSchema} schema the schema.
- * @returns {string} a source file string.
+ * @param schema the schema.
+ * @returns a source file string.
  */
 export function createParserSourceFile(schema: ParserSchema): string {
 	const text = [
@@ -105,8 +103,8 @@ export function createParserSourceFile(schema: ParserSchema): string {
 
 /**
  * creates a base interpreter source file from a schema.
- * @param {ParserSchema} schema the schema.
- * @returns {string} a source file string.
+ * @param schema the schema.
+ * @returns a source file string.
  */
 export function createInterpreterSourceFile(schema: ParserSchema): string {
 	const text = [
@@ -134,8 +132,8 @@ export function createInterpreterSourceFile(schema: ParserSchema): string {
 
 /**
  * creates a base source file from a schema.
- * @param {ParserSchema} schema the schema.
- * @returns {string} a source file string.
+ * @param schema the schema.
+ * @returns a source file string.
  */
 export function createSourceFile(schema: ParserSchema): string {
 	return createInterpreterSourceFile(schema) + 
