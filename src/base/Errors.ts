@@ -1,7 +1,7 @@
 // Errors.ts handles Error definitions for the Lexing - Parsing - Interpeting process.
 
-import { position } from './Position';
-import { Token } from './Token';
+import { position } from "./Position";
+import { Token } from "./Token";
 
 
 /** the defined errors */
@@ -13,7 +13,8 @@ export enum ErrorCode
 	ID_NOT_FOUND     = "identifier not found.", 
 	DUPLICATE_ID     = "duplicate identifier declaration.",
 	MALFORMED_AST	 = "interpreter called on invalid AST structure.",
-	NO_ENTRYPOINT    = "no entry point for parser declared in bnf source."
+	NO_ENTRYPOINT    = "no entry point for parser declared in bnf source.",
+	RESERVED_NAME	 = "reserved name."
 }
 
 export class baseError 

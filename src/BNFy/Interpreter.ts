@@ -68,6 +68,7 @@ export class BNFyInterpreter extends NodeVisitor
                 literal: literal,
                 fn: new Function(literal)
             };
+            this.eval_name(statement.name);
             this.eval_modifiers(statement, schema);
         }
         this.test_non_terminals(schema);
@@ -180,6 +181,7 @@ export class BNFyInterpreter extends NodeVisitor
     }
 
     protected visit_property_assign(node: ParserNode, assign: string): NestedArray<string> {
+        this.test_property(node.name);
         const code = [];
         const modifiers = node.modifiers.map((x: Token) => x.value);
         if (modifiers.includes('[')) {
@@ -195,6 +197,27 @@ export class BNFyInterpreter extends NodeVisitor
     }
 
     /* eval methods */ 
+
+    protected eval_name(name: Token): void {
+        const reserved = [
+            `parse`, 
+            `__set__`, 
+            `__eat__`,
+            `__expect__`, 
+            `__is__`, 
+            `__error__`, 
+            `__lexer__`, 
+            `__cToken__`, 
+            `__nToken__`, 
+            `__raise_on_success__`, 
+            `__table__`, 
+            `__grammar__`, 
+            `__schema__`
+        ];
+        if (name.value && reserved.includes(name.value)) {
+            this.error(ErrorCode.RESERVED_NAME, undefined, name);
+        }
+    }
 
     protected eval_modifiers(node: ParserNode, schema: ParserSchema): void {
         for (const modifier of node.modifiers) {
@@ -217,6 +240,15 @@ export class BNFyInterpreter extends NodeVisitor
 
     /* test methods */ 
 
+    protected test_property(token: Token): void {
+        const reserved = [
+            `__node__`
+        ]
+        if (token.value && reserved.includes(token.value)) {
+            this.error(ErrorCode.RESERVED_NAME, undefined, token);
+        }
+    }
+
     protected test_terminals(tokens: Token[]): void {
         for (const token of tokens) {
             const name = token.toString();
@@ -224,7 +256,7 @@ export class BNFyInterpreter extends NodeVisitor
                 this.error(ErrorCode.ID_NOT_FOUND,
                     `token not defined in table: ${name}`,
                     token);
-            }
+            } 
         }
     }
     protected test_non_terminals(schema: ParserSchema): void {
@@ -234,7 +266,7 @@ export class BNFyInterpreter extends NodeVisitor
                 this.error(ErrorCode.ID_NOT_FOUND, 
                     `non-terminal not defined in grammar: ${name}`, 
                     identifier);
-            }
+            } 
         }
     }
 
@@ -266,6 +298,10 @@ export class BNFyInterpreter extends NodeVisitor
             error = new SemanticsError(ErrorCode.DUPLICATE_ID,
                 token, 
                 detail);
+            break;
+        case ErrorCode.RESERVED_NAME:
+            error = new SemanticsError(ErrorCode.RESERVED_NAME,
+                token);
             break;
         default:
             break;
