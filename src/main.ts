@@ -35,7 +35,7 @@ export class GeneratedParser extends BaseParser
 
 	public parse(source: string): ParserNode {
 		const lexer = new Lexer(source, this.__table__);
-		this.set(lexer);
+		this.__set__(lexer);
 		//@ts-expect-error: anonymous definition of methods.
 		return this[this.__schema__.entryPoint.toString()]();
 	}
@@ -63,7 +63,7 @@ export class GeneratedParserFromSchema extends BaseParser
 
 	public parse(source: string): ParserNode {
 		const lexer = new Lexer(source, this.__table__);
-		this.set(lexer);
+		this.__set__(lexer);
 		//@ts-expect-error: anonymous definition of methods.
 		return this[this.__schema__.entryPoint.toString()]();
 	}
@@ -85,7 +85,7 @@ export function createParserSourceFile(schema: ParserSchema): string {
 		'',
 		`\tparse(source) {`,
 		`\t\tconst lexer = new Lexer(source, this.__table__);`,
-		`\t\tthis.set(lexer);`, 
+		`\t\tthis.__set__(lexer);`, 
 		`\t\treturn this.${schema.entryPoint}();`,
 		'\t}',
 		make_fns(schema),

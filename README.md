@@ -13,7 +13,7 @@ const input = " 1 + 2 * 3 ";
 
 An overkill, but common, method (used for most, if not all, programming languages) would be to parse this `input` into an abstract syntax tree (AST), where each node represents some syntactical structure in the language (i.e. addition and multiplication in mathematical notation), and later interpret it.
 
-A possible AST could be:
+A possible AST for our input could be:
 
 ```javascript
 const AST = {
@@ -62,9 +62,9 @@ const AST = {
 }
 ```
 
-It can be thought of as the underlying structure of the `input`. 
+It can be thought of as a graph that allows traversing the language in a sintactically relevant manner. 
 
-Building these kind of structures is a fairly mechanical process that mainly requires you to create a proper syntax for the language. BNFy provides some tools to abstract away the implementation details of such a logic.
+Building these kind of structures is a fairly mechanical process that mainly requires you to create a proper syntax for the language and implement it through a parser. BNFy provides some tools to abstract away the implementation details of such a logic.
 
 If you'd like to know how parsing (and much more) works under the hood, you might like [this series of posts](https://ruslanspivak.com/lsbasi-part1/).  
 
@@ -86,7 +86,7 @@ It holds only one public method:
 	const source = ' 1 + 2 * 3 ';
 	const AST = parser.parse(source);
 ```
-Based on the `grammar` and `table` provided, it will try to parse the source string and return a custom AST containing the structures defined by the grammar. Ill-formed source strings will raise an exception.
+Based on the `grammar` and `table` provided, it will try to parse the source string and return a custom AST containing the structures defined by the grammar. It will only try, as Ill-formed source strings will raise diferent kinds of exception.
 
 &nbsp;
 ## BNFy's token table
@@ -173,13 +173,16 @@ Here's a quick overview of the language:
     ```
     Syntax declarations are `;` delimited, have a `name` such as _aRule_ and    use the `::=` syntax assignment operator (the _is composed of_ operator).
 
+    Because BNFy generates a parser object, certain names are forbidden, as they are already in use. These are: `parse`, `__set__`, `__eat__`,`__expect__`, `__is__`, `__error__`, `__lexer__`, `__cToken__`, `__nToken__`, `__raise_on_success__`, `__table__`, `__grammar__`, `__schema__`. 
+    
+    In general, try to avoid using dunder naming conventions.
+
 &nbsp;
 - the `entry` modifier
 
-    All grammars must prefix _one_ syntax declaration with the `entry` modifier. This modifier declares the main structure for the language and sets the entry point to be used by the parser's `parse` method.
+    All grammars must prefix one, and only one, syntax declaration with the `entry` modifier. This modifier declares that the following syntax declaration is the main structure of the language and sets the entry point to be used by the parser's `parse` method.
     ```
 	    entry mainSyntax ::= ... ;
-   
     ```
 
 &nbsp;
@@ -190,14 +193,12 @@ A definition is the RHS of a syntax declaration. It is an expression that states
 A simple definition could be:
 ```
 	aFunction ::= 
-        <alpha: name> 
-        & {functionParameters: parameters} 
-        & {functionBody: body} ;
+        <alpha: name> {functionParams: parameters} {functionBody: body} ;
 ```
 
 This definition states: 
 
-_the aFunction syntax is composed of an `alpha` terminal, to be stored as the `name` property in the corresponding AST node, followed by the non-terminal `functionParameters`, to be stored as `parameters`, and followed by the  non-terminal `functionBody`, to be stored as the `body`_.
+_the aFunction syntax is composed of an `alpha` terminal, to be stored as the `name` property in the corresponding AST node, followed by the non-terminal `functionParameters`, to be stored as `parameters`, and followed by the  non-terminal `functionBody`, to be stored as `body`_.
 
 &nbsp;
 ## Terminals and Non-terminals
@@ -224,19 +225,17 @@ _the aFunction syntax is composed of an `alpha` terminal, to be stored as the `n
 &nbsp;
 - the `:` operator
 
-    The property assignment operator tells BNFy that a `terminal` or `non-terminal` is relevant for later interpretation, therefore it should be stored in the AST object under the stated `name`. 
+    The property assignment operator, `:`, tells BNFy that a `terminal` or `non-terminal` is relevant for later interpretation, therefore it should be stored in the AST object under the stated `name`. 
 
     For example:
     ```
     assignment ::= 
-        <alpha: var> 
-        & <ASSIGN_OP> 
-        & {assignment_body: value};
+        <alpha: var> <ASSIGN_OP> {assignment_body: value};
     ```
-    would produce the following node:
+    would produce the following kind of node:
     ```javascript
     {
-        __name__: "assignment", // a reference to the syntax's name.
+        __node__: "assignment", // a reference to the syntax's name.
         var: {  
             // the alpha terminal token object
             type: "alpha",
@@ -245,12 +244,12 @@ _the aFunction syntax is composed of an `alpha` terminal, to be stored as the `n
         },
         value: {
             // the assignment_body non-terminal AST node
-            __name__: "assignment_body",
+            __node__: "assignment_body",
             ...
         }
     }
     ```
-    As of now, there is only one forbbiden property name: `__name__`. In general, try to avoid using 'dunder' naming conventions.  
+    As of now, there is only one forbbiden property name: `__node__`. In general, try to avoid using 'dunder' naming conventions.  
 
 &nbsp;
 - the `[]` modifier
@@ -260,44 +259,48 @@ _the aFunction syntax is composed of an `alpha` terminal, to be stored as the `n
     For example, we may use:
 
     ```
-    addition ::= <number: toAdd[]> + <PLUS> ;
+    addition ::= <number: toAdd[]> (<PLUS> <number: toAdd[]>)* ;
     ```
-    the `+` is the _repeat once or more_ operator. This definition means: 
+    the `*` is the _repeat zero or more_ operator. This definition means: 
     
     _Read a number and store it in the `toAdd` property array. While there is a plus token, read it, read a new number, and push the latter into `toAdd`_.
 
-    We'll explain a bit more of the `+` operator further below.
+    We'll explain a bit more of the `*` operator further below.
 
 &nbsp;
 - the `!` modifier
 
-    The _do not eat_ modifier allows for a `terminal` to be read but not processed. This helps to keep rules contained and is mainly useful with the `or` and `if` operators.
+    The _do not eat_ modifier, `!`, allows for a `terminal` to be read but not processed. This may help on certain special cases.
 
     For example:
     ```
-        numbers ::=
-            <number: value>
-            |<!alpha> {constant: value};
-        
-        constant ::= <alpha: value>;
+        empty_statement ::= {empty} <SEMI> ;
+        empty ::= <!SEMI> ;
     ```
-    the `|` is the _or_ operator. It will be explained further down. 
-    
-    This definition means:
-
-    _Read a number and store it in `value` or, if the token to be read is an alpha, read a constant and store it in `value`._  
 
 &nbsp;
-- `Terminal Arrays`
+- the `main` modifier
 
-    Terminal Arrays allow you to define a set of possible candidate terminals for the current step in the syntax. They are delimited by `[` and `]`, and hold the same operators and modifiers as any terminal.
+    The _main_ modifier, allows for a `non-terminal` to replace the current node being constructed if no other property assignments are made. 
 
     For example:
     ```
-    [!<alpha>, <number> : value]
-    ```   
-    Note that terminal arrays will disregard individual terminal operators and modifiers, as they are expected to act as a single group. 
+        unaryMinus ::= <MINUS: operator>^ {main factor: RHS}
+    ```
 
+    The `^` is the _repeat 0 or 1 time_ operator, it is explained further below.
+
+    This statement can be read as follows: unaryMinus is composed of an optional `MINUS` token followed by a factor. The node to be constructed by this syntax holds the properties `operator` and `RHS`. If there is only a `RHS` property, replace this node by it.   
+
+&nbsp;
+- `Terminal Lists`
+
+    Terminal Lists allow you to define a set of possible candidate terminals for the current step in the syntax. They follow the same syntax as a single terminal. 
+
+    For example:
+    ```
+    <alpha, number: value>
+    ```   
 
 &nbsp;
 ## Operators
@@ -306,81 +309,69 @@ The following operators may be thought of as sequence controls. In order of prec
 
 - `choice`
 
-    The highest precedence operator is the  _or_: `|` operator. It defines an option between a pair of terminals and / or non-terminals. The decision is based on the  next token to be processed. Therefore, a token or token array must be declared as the condition for the choice.
+    The highest precedence operator is the  _or_, `|`, operator. It defines an option between a pair of terminals and / or non-terminals. The decision is made implicitly on the  next token to be processed. Therefore if both options start with the same token, the first one will be chosen. 
 
-    The structure is `a` `|` `terminal condition` `b`.
+    The structure is `a` `|` `b`.
     
     For example:
     ```
     factor ::= 
         <number: value>
-        |<MINUS: operator> & <number: value>
-        |<L_PAREN> {expression: value} & <R_PAREN> ;
+        | <MINUS: operator> <number: value>
+        | <L_PAREN> {expression: value} <R_PAREN> ;
     ```
 
+    In particular, choices on non-terminals with no property assignments will omit themselves from the generated parser in favor of the chosen non-terminal. 
+
+    For example:
+    ```
+        aBypassRule ::= {a} | {b} | {c} ;
+    ``` 
+    Will not generate a node for itself, but rather an `a`, `b` or `c` node.
+
 &nbsp;
-- `concatenation`
+- `sequence`
 
-    Next is the  _and_: `&` operator. It concatenates a pair of terminals and / or non-terminals. 
+    Next is the  _and_ implicit structure. It concatenates a pair of terminals and / or non-terminals. 
 
-    The structure is `a` `&` `b`.
+    The structure is `a` `b` `c` ...
     
     For example:
     ```
-    addition ::= 
-        <number : LHS> 
-        & <PLUS: operator> 
-        & <number: RHS>;
+    term ::= 
+        {factor : LHS} <TIMES, DIVISION: operator> {factor: RHS};
     ```
 
 &nbsp;
 - `repetition`
 
-    Next are the `+` and `*` operators. They define, respectively, the _repeat 1 or more times_ and _repeat 0 or more times_ operators. Both need a condition to be met for repeating.
+    Next are the `^`, `*` and `+` operators. They define, respectively, the _repeat 0 or 1 times_, _repeat 0 or more times_ and _repeat 1 or more times_ operators. The condition is checked against the first terminal or non-terminal in the LHS.   
 
-    The structure is `a` `+ or *` `terminal condition`.
+    The structure is `a` `^, * or +`.
 
     For example:
 
     ```
-    addition ::= <number: toAdd[]> + <PLUS>;
+    term ::= {factor : LHS} (<TIMES, DIVISION: operator> {term: RHS})*;
     ```
 
 &nbsp;
 - `conditionals`
-    The _if_: `?` and _else_: `->` operators define a conditional statement. The _else_ statement is optional.
+    The _if_: `?` and _else_: `:` operators define a conditional statement. The _else_ statement is optional.
 
-    The structure is: `terminal condition` `?` `a` (`->` `b`).
-    
-    For example:
+    The structure is: `a` `?` `b` `:` `c`.
+
+    For example, for a mix between C-styled number literal type casting, and named constants we could define:
     ```
-    additionOrSubstraction ::=
-        <number: LHS>
-        & <!PLUS> ?
-            <PLUS: operator>
-        ->
-            <MINUS: operator>
-        & <numbre: RHS> ;
+    constant ::=
+        <number: constant> ? <alpha: type>^ : <alpha: constant>;
     ```
+    such a rule would be able to parse:
+    - numbers: _145.12_
+    - typed numbers: _13.1F_
+    - named constants: _pi_
 
-&nbsp;
-## Direct node assignment
-Sometimes, it can be useful to assign literals or reassign already defined properties directly. This can be done through the `$` delimited property assignments.
-
-The structure is: `$` `propertyName` `=` `literal or propertyName` `$`
-
-The special propertyName `__node__` may be used to refer to the current node being constructed. In particular it may be used to replace the current node with one of its children.
-
-For example:
-
-```
-entry expression ::=        
-        {term: lNode} 
-        & [<PLUS>, <MINUS>: operator] ? 
-            {expression: rNode}
-        -> 
-            $ __node__ = lNode $;
-```
+    Most of the times, this operator can be replaced with other kinds of structures. 
 
 &nbsp;
 ## Utils 

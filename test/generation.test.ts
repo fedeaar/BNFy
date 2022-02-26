@@ -12,7 +12,7 @@ describe('generate self:', () => {
     
     const parser = new GeneratedParser(BNFyGrammar, BNFyTable); 
     const parserSource = createParserSourceFile(parser.__schema__);
-    
+
     it('check if the BNFParser can generate itself from its own grammar.', () => {
         const reiterationAST = parser.parse(BNFyGrammar);
         const reiterationInterpreter = new BNFyInterpreter(BNFyTable);

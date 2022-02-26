@@ -88,7 +88,7 @@ export class BaseParser
 	 * sets a new lexer for the parser.
 	 * @param lexer the new lexer.
 	 */
-	protected set(lexer: Lexer): void {
+	protected __set__(lexer: Lexer): void {
 		this.__lexer__ = lexer;
 		this.__cToken__ = this.__lexer__.nextToken();
 		this.__nToken__ = this.__lexer__.nextToken();

@@ -27,7 +27,7 @@ export class BNFyParser extends BaseParser
      */
 	public parse(source: string): ParserNode {
 		const lexer = new Lexer(source, this.__table__);
-		this.set(lexer);
+		this.__set__(lexer);
 		return this.grammar();
 	}
 
