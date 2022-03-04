@@ -86,7 +86,7 @@ It holds only one public method:
 	const source = ' 1 + 2 * 3 ';
 	const AST = parser.parse(source);
 ```
-Based on the `grammar` and `table` provided, it will try to parse the source string and return a custom AST containing the structures defined by the grammar. It will only try, as Ill-formed source strings will raise diferent kinds of exception.
+Based on the `grammar` and `table` provided, it will try to parse the source string and return a custom AST containing the structures defined by the grammar. It will only try, as Ill-formed source strings will raise diferent kinds of exceptions.
 
 &nbsp;
 ## BNFy's token table
